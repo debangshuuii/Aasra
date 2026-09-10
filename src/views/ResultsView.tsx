@@ -15,11 +15,12 @@ import {
   Stethoscope,
   HeartHandshake,
   Activity,
-  PhoneCall,
-  Loader2,
-  RefreshCw,
-  Flame,
-  FileDown
+  PhoneCall, 
+  Loader2, 
+  RefreshCw, 
+  Flame, 
+  FileDown,
+  MapPin
 } from 'lucide-react';
 
 interface ResultsViewProps {
@@ -28,6 +29,7 @@ interface ResultsViewProps {
   onNavigate: (view: ViewId) => void;
   onRetake: () => void;
   onOpenCrisis: () => void;
+  onOpenNearbyHospitals?: () => void;
 }
 
 export const ResultsView: React.FC<ResultsViewProps> = ({
@@ -36,6 +38,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onNavigate,
   onRetake,
   onOpenCrisis,
+  onOpenNearbyHospitals,
 }) => {
   const [aiReport, setAiReport] = useState<string>('');
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(true);
@@ -230,14 +233,26 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onOpenCrisis}
-            className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
-          >
-            <PhoneCall className="w-4 h-4" />
-            <span>Connect to Crisis Helplines (14416 / 112)</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            {onOpenNearbyHospitals && (
+              <button
+                type="button"
+                onClick={onOpenNearbyHospitals}
+                className="px-4 py-2.5 rounded-xl bg-white border border-red-300 text-red-900 font-bold text-xs hover:bg-red-50 transition-colors shadow-2xs flex items-center gap-2 cursor-pointer"
+              >
+                <MapPin className="w-4 h-4 text-red-600" />
+                <span>Find Nearby Hospitals (GPS)</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onOpenCrisis}
+              className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
+            >
+              <PhoneCall className="w-4 h-4" />
+              <span>Call Helplines (14416 / 112)</span>
+            </button>
+          </div>
         </div>
       )}
 

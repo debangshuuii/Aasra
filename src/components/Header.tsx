@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ViewId } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { 
   PhoneCall, 
   User, 
@@ -13,7 +14,10 @@ import {
   LayoutDashboard, 
   History, 
   Wind,
-  ShieldCheck
+  ShieldCheck,
+  LogIn,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -21,6 +25,7 @@ interface HeaderProps {
   onNavigate: (view: ViewId) => void;
   onOpenCrisis: () => void;
   onOpenGrounding?: () => void;
+  onOpenAuth?: () => void;
 }
 
 const NAV_LINKS: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -37,13 +42,29 @@ export const Header: React.FC<HeaderProps> = ({
   currentView, 
   onNavigate, 
   onOpenCrisis, 
-  onOpenGrounding 
+  onOpenGrounding,
+  onOpenAuth 
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const { user, profile, signOut } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleNavClick = (view: ViewId) => {
     onNavigate(view);
     setMobileMenuOpen(false);
+    setUserMenuOpen(false);
   };
 
   const isNavActive = (id: ViewId) => {
@@ -127,13 +148,73 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="whitespace-nowrap">Crisis: 14416</span>
           </button>
 
-          <button
-            onClick={() => handleNavClick('dashboard')}
-            className="hidden sm:flex w-8 h-8 rounded-full bg-gray-100 text-gray-700 border border-gray-200 items-center justify-center hover:bg-gray-200 transition-colors shadow-2xs"
-            title="Patient Dashboard"
-          >
-            <User className="w-4 h-4" />
-          </button>
+          {/* User Profile / Auth State */}
+          <div className="relative" ref={userMenuRef}>
+            {user ? (
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 transition-all cursor-pointer shadow-2xs text-xs font-semibold"
+                title="Account Menu"
+              >
+                <div className="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="hidden md:inline max-w-[100px] truncate">
+                  {profile?.display_name || user.email?.split('@')[0] || 'User'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-teal-600 hidden sm:inline" />
+              </button>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span className="whitespace-nowrap">Sign In</span>
+              </button>
+            )}
+
+            {/* User Dropdown Menu */}
+            {userMenuOpen && user && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-900 truncate">
+                    {profile?.display_name || 'Patient'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+                </div>
+
+                <button
+                  onClick={() => handleNavClick('dashboard')}
+                  className="w-full px-4 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-gray-500" />
+                  <span>My Clinical Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick('history')}
+                  className="w-full px-4 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <History className="w-4 h-4 text-gray-500" />
+                  <span>Screening History</span>
+                </button>
+
+                <div className="border-t border-gray-100 my-1" />
+
+                <button
+                  onClick={async () => {
+                    setUserMenuOpen(false);
+                    await signOut();
+                  }}
+                  className="w-full px-4 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <LogOut className="w-4 h-4 text-red-500" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Mobile Hamburger Toggle */}
           <button
@@ -149,6 +230,47 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white/98 backdrop-blur-2xl border-b border-gray-200 px-4 py-3 shadow-lg animate-in slide-in-from-top-2 duration-150">
+          {/* Mobile Auth Bar */}
+          <div className="mb-3 p-2.5 rounded-xl bg-gray-50 border border-gray-200/80 flex items-center justify-between">
+            {user ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-900 truncate">
+                      {profile?.display_name || 'Patient'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    setMobileMenuOpen(false);
+                    await signOut();
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs text-gray-600">Save clinical progress</span>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (onOpenAuth) onOpenAuth();
+                  }}
+                  className="px-3 py-1.5 bg-teal-700 text-white text-xs font-semibold rounded-lg hover:bg-teal-800 transition-colors cursor-pointer shadow-2xs"
+                >
+                  Sign In
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-2 mb-3">
             {NAV_LINKS.map((item) => {
               const active = isNavActive(item.id);

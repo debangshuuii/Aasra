@@ -17,6 +17,10 @@ import { CrisisModal } from './components/CrisisModal';
 import { GroundingModal } from './components/GroundingModal';
 import { DailyCheckInModal } from './components/DailyCheckInModal';
 import { PreviousCheckInsModal } from './components/PreviousCheckInsModal';
+import { AuthModal } from './components/AuthModal';
+import { NearbyEmergencyModal } from './components/NearbyEmergencyModal';
+import { useAuth } from './context/AuthContext';
+import { supabase } from './utils/supabaseClient';
 
 import { LandingView } from './views/LandingView';
 import { ConsentView } from './views/ConsentView';
@@ -35,6 +39,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewId>('landing');
   const [isCrisisModalOpen, setIsCrisisModalOpen] = useState<boolean>(false);
   const [isGroundingModalOpen, setIsGroundingModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isNearbyEmergencyModalOpen, setIsNearbyEmergencyModalOpen] = useState<boolean>(false);
 
   // Active Questionnaire Responses
   const [traumaExposure, setTraumaExposure] = useState<boolean | null>(null);
@@ -51,6 +57,43 @@ export default function App() {
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState<boolean>(false);
   const [isPreviousCheckInsModalOpen, setIsPreviousCheckInsModalOpen] = useState<boolean>(false);
 
+  const { user } = useAuth();
+
+  // Load user's saved screenings from Supabase upon login
+  useEffect(() => {
+    if (!user) return;
+    const loadSupabaseData = async () => {
+      try {
+        const { data: assessmentsData, error } = await supabase
+          .from('assessments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && assessmentsData && assessmentsData.length > 0) {
+          const mapped: AssessmentRecord[] = assessmentsData.map((item: any) => ({
+            id: item.id,
+            date: new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            score: item.ptsd_score,
+            total: 5,
+            isPositive: item.ptsd_positive,
+            statusText: !item.trauma_exposure ? 'Trauma Neg (0/5)' : item.ptsd_positive ? 'Positive PTSD Screen' : 'Lower Indication (0–2)',
+            summary: item.ai_summary || `Screening Record: PC-PTSD-5: ${item.ptsd_score}/5, GAD-7: ${item.gad7_score}/21.`,
+            answers: item.ptsd_answers || [],
+            traumaExposure: item.trauma_exposure,
+            gad7Score: item.gad7_score,
+            gad7Severity: item.gad7_severity,
+            riskLevel: item.risk_level,
+          }));
+          setHistoryList(mapped);
+        }
+      } catch (e) {
+        console.warn('[App] Could not fetch user assessments from Supabase:', e);
+      }
+    };
+    loadSupabaseData();
+  }, [user]);
+
   const handleSaveCheckIn = (newCheckIn: DailyCheckIn) => {
     setCheckIns(prev => {
       const filtered = prev.filter(c => c.date !== newCheckIn.date);
@@ -58,6 +101,24 @@ export default function App() {
       saveStoredCheckIns(updated);
       return updated;
     });
+
+    // Sync to Supabase if patient is signed in
+    if (user) {
+      supabase.from('daily_checkins').insert({
+        user_id: user.id,
+        checkin_date: newCheckIn.date,
+        display_date: newCheckIn.displayDate,
+        mood: newCheckIn.mood,
+        mood_label: newCheckIn.moodLabel,
+        day_overall: newCheckIn.dayOverall,
+        stress_level: newCheckIn.stressLevel,
+        sleep_quality: newCheckIn.sleepQuality,
+        felt_supported: newCheckIn.feltSupported,
+        notes: newCheckIn.notes,
+      }).then(({ error }) => {
+        if (error) console.warn('[App] Supabase check-in sync error:', error.message);
+      });
+    }
   };
 
   const todayKey = formatDateKey(new Date());
@@ -162,6 +223,28 @@ export default function App() {
     };
 
     setHistoryList(prev => [newRecord, ...prev]);
+
+    // Sync to Supabase if patient is signed in
+    if (user) {
+      supabase.from('assessments').insert({
+        user_id: user.id,
+        trauma_exposure: !!traumaExposure,
+        ptsd_score: ptsdScore,
+        ptsd_positive: ptsdPositive,
+        ptsd_answers: ptsdAnswers,
+        gad7_score: gad7Score,
+        gad7_severity: gad7Severity,
+        gad7_needs_referral: gad7NeedsReferral,
+        gad7_answers: gad7Answers,
+        risk_level: riskLevel,
+        urgent_distress: !!urgentDistress,
+        self_harm_or_danger: !!selfHarmOrDanger,
+        ai_summary: newRecord.summary
+      }).then(({ error }) => {
+        if (error) console.warn('[App] Supabase assessment sync error:', error.message);
+      });
+    }
+
     handleNavigate('results');
   };
 
@@ -193,6 +276,7 @@ export default function App() {
         onNavigate={handleNavigate}
         onOpenCrisis={() => setIsCrisisModalOpen(true)}
         onOpenGrounding={() => setIsGroundingModalOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Content Body */}
@@ -249,6 +333,7 @@ export default function App() {
               onNavigate={handleNavigate}
               onRetake={handleStartAssessment}
               onOpenCrisis={() => setIsCrisisModalOpen(true)}
+              onOpenNearbyHospitals={() => setIsNearbyEmergencyModalOpen(true)}
             />
           )}
 
@@ -308,6 +393,19 @@ export default function App() {
       <CrisisModal
         isOpen={isCrisisModalOpen}
         onClose={() => setIsCrisisModalOpen(false)}
+        onOpenNearbyHospitals={() => setIsNearbyEmergencyModalOpen(true)}
+      />
+
+      {/* Emergency Centers & Hospitals Locator Modal */}
+      <NearbyEmergencyModal
+        isOpen={isNearbyEmergencyModalOpen}
+        onClose={() => setIsNearbyEmergencyModalOpen(false)}
+      />
+
+      {/* Patient Authentication (Google OAuth + Magic Link) Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
       {/* 5-4-3-2-1 Somatic Grounding Interactive Modal */}

@@ -3,6 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
+import { generateWithRotation, getGeminiApiKeys } from './server/geminiRotation';
 
 dotenv.config();
 
@@ -189,12 +190,11 @@ async function startServer() {
         riskLevel: String(riskLevel)
       });
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+      const availableKeys = getGeminiApiKeys();
+      if (availableKeys.length === 0) {
         return res.json({ summary: fallbackText, isFallback: true });
       }
 
-      const ai = new GoogleGenAI({ apiKey });
       const prompt = `Synthesize these clinical screening results for a victim/patient into an empathetic, structured preliminary assessment report with referral recommendations:
 - PC-PTSD-5 Criterion A Trauma Exposure: ${traumaExposure ? 'YES' : 'NO'}
 - PC-PTSD-5 PTSD Score: ${traumaExposure ? ptsdScore : 0} of 5 (Cut-point: 3+ indicates positive screen, 4 is VA research cut-point)
@@ -209,28 +209,19 @@ Format requirements:
 5. Indian Helplines (Tele-MANAS 14416, KIRAN 1800-599-0019, Vandrevala Foundation +91 9999 666 555).
 6. Mandatory Clinical Disclaimer: "The PC-PTSD-5 and GAD-7 are screening tools, not diagnostic tests; a positive result warrants further evaluation by a qualified professional." Keep concise (3-4 concise sections).`;
 
-      let response: any;
-      let usedModel = 'gemini-3.1-flash-lite';
-      try {
-        response = await generateWithTimeout(ai, 'gemini-3.1-flash-lite', {
+      const result = await generateWithRotation(
+        ['gemini-3.1-flash-lite', 'gemini-3.5-flash'],
+        {
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           config: {
             systemInstruction: 'You are Saathi, an empathetic, trauma-informed clinical assistant synthesizing screening questionnaires for victims and survivors.'
           }
-        }, 25000);
-      } catch (err: any) {
-        console.warn('gemini-3.1-flash-lite attempt failed in /api/assess, trying gemini-3.5-flash:', err?.message);
-        usedModel = 'gemini-3.5-flash';
-        response = await generateWithTimeout(ai, 'gemini-3.5-flash', {
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: {
-            systemInstruction: 'You are Saathi, an empathetic, trauma-informed clinical assistant synthesizing screening questionnaires for victims and survivors.'
-          }
-        }, 25000);
-      }
+        },
+        25000
+      );
 
-      const summary = response.text || fallbackText;
-      res.json({ summary, isFallback: false, model: usedModel });
+      const summary = result.text || fallbackText;
+      res.json({ summary, isFallback: false, model: result.model, keyIndex: result.keyIndexUsed });
     } catch (error: any) {
       console.warn('API /api/assess error, falling back:', error?.message);
       const fallbackText = getClinicalAssessmentFallback({
@@ -254,16 +245,13 @@ Format requirements:
         return res.status(400).json({ error: 'Message is required' });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
-
-      if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+      const availableKeys = getGeminiApiKeys();
+      if (availableKeys.length === 0) {
         return res.json({
           reply: getClinicalFallbackResponse(message),
           isFallback: true
         });
       }
-
-      const ai = new GoogleGenAI({ apiKey });
 
       const systemInstruction = `You are Saathi, an empathetic, trauma-informed psychoeducational assistant.
 You provide supportive information, explain PTSD symptoms according to DSM-5 (Intrusive memories, Avoidance, Hyperarousal & reactivity, Negative cognitions & mood), and guide users through nervous system regulation exercises (5-4-3-2-1 grounding, box breathing).
@@ -325,29 +313,20 @@ CLINICAL BOUNDARIES & SAFETY PROTOCOLS:
         });
       }
 
-      let response: any;
-      let usedModel = 'gemini-3.1-flash-lite';
-      try {
-        response = await generateWithTimeout(ai, 'gemini-3.1-flash-lite', {
+      const result = await generateWithRotation(
+        ['gemini-3.1-flash-lite', 'gemini-3.5-flash'],
+        {
           contents,
           config: {
             systemInstruction,
           }
-        }, 8000);
-      } catch (err: any) {
-        console.warn('gemini-3.1-flash-lite attempt failed in /api/chat, trying gemini-3.5-flash:', err?.message);
-        usedModel = 'gemini-3.5-flash';
-        response = await generateWithTimeout(ai, 'gemini-3.5-flash', {
-          contents,
-          config: {
-            systemInstruction,
-          }
-        }, 8000);
-      }
+        },
+        10000
+      );
 
-      const replyText = response.text || getClinicalFallbackResponse(message);
-      console.log(`[Chat API] Responded using ${usedModel} (${replyText.length} chars)`);
-      res.json({ reply: replyText, isFallback: false, model: usedModel });
+      const replyText = result.text || getClinicalFallbackResponse(message);
+      console.log(`[Chat API] Responded using ${result.model} on key #${result.keyIndexUsed} (${replyText.length} chars)`);
+      res.json({ reply: replyText, isFallback: false, model: result.model, keyIndex: result.keyIndexUsed });
     } catch (error: any) {
       console.warn('Gemini API call failed, using clinical fallback:', error?.message);
       res.json({

@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Phone, MessageSquare, ShieldAlert, X, Globe, HeartHandshake } from 'lucide-react';
+import { AlertTriangle, Phone, MessageSquare, ShieldAlert, X, Globe, HeartHandshake, MapPin } from 'lucide-react';
 
 interface CrisisModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenNearbyHospitals?: () => void;
 }
 
-export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => {
+export const CrisisModal: React.FC<CrisisModalProps> = ({ 
+  isOpen, 
+  onClose,
+  onOpenNearbyHospitals 
+}) => {
   const [region, setRegion] = useState<'india' | 'international'>('india');
 
   if (!isOpen) return null;
@@ -37,7 +42,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Region Toggle: India (Default) vs International */}
-        <div className="flex items-center p-1 bg-gray-100 rounded-xl mb-4">
+        <div className="flex items-center p-1 bg-gray-100 rounded-xl mb-3">
           <button
             type="button"
             onClick={() => setRegion('india')}
@@ -61,6 +66,33 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
             🌐 International (US / 988)
           </button>
         </div>
+
+        {/* GPS Emergency Centers Finder Button */}
+        {onOpenNearbyHospitals && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenNearbyHospitals();
+              }}
+              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white flex items-center justify-between shadow-xs transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-white animate-bounce" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold leading-tight">Find Nearest Emergency Hospitals &amp; Doctors</div>
+                  <div className="text-[10px] text-red-100">GPS-based 24/7 trauma &amp; psychiatric centers</div>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-white/25 text-[11px] font-bold group-hover:bg-white/35 transition-colors">
+                Locate Now &rarr;
+              </span>
+            </button>
+          </div>
+        )}
 
         <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
           If you or someone you care about is experiencing overwhelming distress or thoughts of harm, compassionate trained support is available immediately. You never have to carry this alone:
