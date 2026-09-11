@@ -1,5 +1,6 @@
 import React from 'react';
 import { ViewId, DailyCheckIn, AssessmentRecord } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { 
   getCurrentWeekDays, 
   formatDateKey, 
@@ -45,6 +46,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenCrisis,
   historyList
 }) => {
+  const { user, displayName } = useAuth();
   const latestAssessment = historyList && historyList.length > 0 ? historyList[0] : undefined;
   const todayKey = formatDateKey(new Date());
   const todayCheckIn = checkIns.find(c => c.date === todayKey);
@@ -79,18 +81,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Patient Overview
             </span>
             <span className="text-gray-300">•</span>
-            <span className="text-xs text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200/60 font-medium flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-teal-600" />
-              Private Local Session
-            </span>
+            {user ? (
+              <span className="text-xs text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200/60 font-medium flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-teal-600" />
+                Authenticated Session
+              </span>
+            ) : (
+              <span className="text-xs text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60 font-medium flex items-center gap-1">
+                Guest Session — Sign in to sync
+              </span>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-950 font-display">
-            Welcome back
+            {user
+              ? `Welcome back, ${displayName || user.email?.split('@')[0] || 'Patient'}`
+              : 'Welcome to Aasra'}
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Your clinical screener records and coping tools are stored locally on your device with strict confidentiality.
+            {user
+              ? 'Your clinical screener records, mood check-ins, and coping tools are secured to your account.'
+              : 'Your clinical screener records and coping tools are stored locally on your device with strict confidentiality.'}
           </p>
         </div>
+
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button

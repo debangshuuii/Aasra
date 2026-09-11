@@ -496,11 +496,13 @@ export function generateSeedCheckIns(refDate = new Date()): DailyCheckIn[] {
   return list;
 }
 
-const CHECKIN_STORAGE_KEY = 'mindtrauma_daily_checkins';
+const CHECKIN_STORAGE_KEY = (userId?: string) =>
+  `mindtrauma_daily_checkins_${userId || 'guest'}`;
 
-export function loadStoredCheckIns(): DailyCheckIn[] {
+export function loadStoredCheckIns(userId?: string): DailyCheckIn[] {
+  const key = CHECKIN_STORAGE_KEY(userId);
   try {
-    const raw = localStorage.getItem(CHECKIN_STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -518,7 +520,7 @@ export function loadStoredCheckIns(): DailyCheckIn[] {
           return c;
         });
         if (migrated) {
-          saveStoredCheckIns(cleaned);
+          try { localStorage.setItem(key, JSON.stringify(cleaned)); } catch {}
         }
         return cleaned;
       }
@@ -528,26 +530,29 @@ export function loadStoredCheckIns(): DailyCheckIn[] {
   }
   const seed = generateSeedCheckIns();
   try {
-    localStorage.setItem(CHECKIN_STORAGE_KEY, JSON.stringify(seed));
+    localStorage.setItem(key, JSON.stringify(seed));
   } catch {
     // Ignore storage issues in test/sandboxed envs
   }
   return seed;
 }
 
-export function saveStoredCheckIns(checkIns: DailyCheckIn[]): void {
+export function saveStoredCheckIns(checkIns: DailyCheckIn[], userId?: string): void {
   try {
-    localStorage.setItem(CHECKIN_STORAGE_KEY, JSON.stringify(checkIns));
+    localStorage.setItem(CHECKIN_STORAGE_KEY(userId), JSON.stringify(checkIns));
   } catch (e) {
     console.warn('Could not save check-ins to localStorage:', e);
   }
 }
 
-const HISTORY_STORAGE_KEY = 'mindtrauma_assessment_history';
+const HISTORY_STORAGE_KEY = (userId?: string) =>
+  `mindtrauma_assessment_history_${userId || 'guest'}`;
 
-export function loadStoredHistory(): AssessmentRecord[] {
+
+export function loadStoredHistory(userId?: string): AssessmentRecord[] {
+  const key = HISTORY_STORAGE_KEY(userId);
   try {
-    const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -564,7 +569,7 @@ export function loadStoredHistory(): AssessmentRecord[] {
           return item;
         });
         if (migrated) {
-          saveStoredHistory(cleaned);
+          saveStoredHistory(cleaned, userId);
         }
         return cleaned;
       }
@@ -572,18 +577,19 @@ export function loadStoredHistory(): AssessmentRecord[] {
   } catch (e) {
     console.warn('Could not read history from localStorage:', e);
   }
+  // New user — show baseline dynamic history (not stale)
   const initial = getInitialHistory();
   try {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(initial));
+    localStorage.setItem(key, JSON.stringify(initial));
   } catch {
     // Ignore in test envs
   }
   return initial;
 }
 
-export function saveStoredHistory(list: AssessmentRecord[]): void {
+export function saveStoredHistory(list: AssessmentRecord[], userId?: string): void {
   try {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(HISTORY_STORAGE_KEY(userId), JSON.stringify(list));
   } catch (e) {
     console.warn('Could not save history to localStorage:', e);
   }

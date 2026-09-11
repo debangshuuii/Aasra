@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, loading, displayName, avatarUrl, signOut } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 shadow-xs">
       <div className="h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Brand Identity */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => handleNavClick('landing')}
             className="flex items-center gap-3 text-left group focus:outline-none"
@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-bold text-lg sm:text-xl text-gray-950 tracking-tight leading-none font-display">
                 Aasra
               </span>
-              <span className="text-[11px] text-gray-500 font-medium hidden sm:inline-block mt-0.5">
+              <span className="text-[11px] text-gray-500 font-medium hidden xl:inline-block mt-0.5">
                 Clinical Screener &amp; Trauma Support
               </span>
             </div>
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Desktop Primary Navigation */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-hidden">
           {NAV_LINKS.map((item) => {
             const active = isNavActive(item.id);
             const Icon = item.icon;
@@ -113,14 +113,14 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                   active
                     ? 'bg-black text-white shadow-xs'
                     : 'text-gray-600 hover:text-gray-950 hover:bg-gray-100/80'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gray-500'}`} />
-                <span>{item.label}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : 'text-gray-500'}`} />
+                <span className="hidden xl:inline">{item.label}</span>
               </button>
             );
           })}
@@ -150,17 +150,29 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Profile / Auth State */}
           <div className="relative" ref={userMenuRef}>
-            {user ? (
+            {loading ? (
+              // Neutral skeleton while checking session — prevents flashing "Sign In"
+              <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />
+            ) : user ? (
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 transition-all cursor-pointer shadow-2xs text-xs font-semibold"
                 title="Account Menu"
               >
-                <div className="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <span className="hidden md:inline max-w-[100px] truncate">
-                  {profile?.display_name || user.email?.split('@')[0] || 'User'}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName || 'User'}
+                    className="w-7 h-7 rounded-full object-cover border border-teal-200 shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {(displayName || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden md:inline max-w-[120px] truncate">
+                  {displayName || profile?.display_name || user.email?.split('@')[0] || 'User'}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-teal-600 hidden sm:inline" />
               </button>
@@ -179,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-900 truncate">
-                    {profile?.display_name || 'Patient'}
+                    {displayName || profile?.display_name || 'Patient'}
                   </p>
                   <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
                 </div>
@@ -235,12 +247,21 @@ export const Header: React.FC<HeaderProps> = ({
             {user ? (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                  </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName || 'User'}
+                      className="w-8 h-8 rounded-full object-cover border border-teal-200 shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {(displayName || user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-900 truncate">
-                      {profile?.display_name || 'Patient'}
+                      {displayName || profile?.display_name || 'Patient'}
                     </p>
                     <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
                   </div>

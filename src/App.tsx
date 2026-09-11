@@ -52,7 +52,7 @@ export default function App() {
   const [urgentDistress, setUrgentDistress] = useState<boolean | null>(null);
   const [selfHarmOrDanger, setSelfHarmOrDanger] = useState<boolean | null>(null);
 
-  // Saved Screening History
+  // Saved Screening History - init with guest store (user scope applied after auth loads)
   const [historyList, setHistoryList] = useState<AssessmentRecord[]>(() => loadStoredHistory());
 
   // Daily Check-ins State (persisted locally)
@@ -62,21 +62,32 @@ export default function App() {
 
   const { user } = useAuth();
 
-  // Load user's saved screenings from Supabase upon login
+  // Switch to the user-scoped localStorage store and load Supabase data when user changes
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+
+    // Load the correct scoped local data for this user (or guest)
+    const localHistory = loadStoredHistory(userId);
+    const localCheckIns = loadStoredCheckIns(userId);
+    setHistoryList(localHistory);
+    setCheckIns(localCheckIns);
+
+    if (!userId) return;
+
+    // Merge Supabase cloud assessments for this user
     const loadSupabaseData = async () => {
       try {
         const { data: assessmentsData, error } = await supabase
           .from('assessments')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (!error && assessmentsData && assessmentsData.length > 0) {
           const mapped: AssessmentRecord[] = assessmentsData.map((item: any) => ({
             id: item.id,
             date: new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            timestamp: new Date(item.created_at).getTime(),
             score: item.ptsd_score,
             total: 5,
             isPositive: item.ptsd_positive,
@@ -88,27 +99,55 @@ export default function App() {
             gad7Severity: item.gad7_severity,
             riskLevel: item.risk_level,
           }));
+          // Save merged cloud records to user-scoped localStorage
+          saveStoredHistory(mapped, userId);
           setHistoryList(mapped);
         }
+
+        // Also fetch check-ins from Supabase
+        const { data: checkInData, error: ciError } = await supabase
+          .from('daily_checkins')
+          .select('*')
+          .eq('user_id', userId)
+          .order('checkin_date', { ascending: false });
+
+        if (!ciError && checkInData && checkInData.length > 0) {
+          const mappedCheckIns: DailyCheckIn[] = checkInData.map((item: any) => ({
+            id: item.id,
+            date: item.checkin_date,
+            displayDate: item.display_date || new Date(item.checkin_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+            timestamp: new Date(item.checkin_date).getTime(),
+            mood: item.mood,
+            moodLabel: item.mood_label,
+            dayOverall: item.day_overall,
+            stressLevel: item.stress_level,
+            sleepQuality: item.sleep_quality,
+            feltSupported: item.felt_supported,
+            notes: item.notes,
+          }));
+          saveStoredCheckIns(mappedCheckIns, userId);
+          setCheckIns(mappedCheckIns);
+        }
       } catch (e) {
-        console.warn('[App] Could not fetch user assessments from Supabase:', e);
+        console.warn('[App] Could not fetch user data from Supabase:', e);
       }
     };
     loadSupabaseData();
   }, [user]);
 
   const handleSaveCheckIn = (newCheckIn: DailyCheckIn) => {
+    const userId = user?.id;
     setCheckIns(prev => {
       const filtered = prev.filter(c => c.date !== newCheckIn.date);
       const updated = [newCheckIn, ...filtered];
-      saveStoredCheckIns(updated);
+      saveStoredCheckIns(updated, userId);
       return updated;
     });
 
     // Sync to Supabase if patient is signed in
-    if (user) {
+    if (userId) {
       supabase.from('daily_checkins').insert({
-        user_id: user.id,
+        user_id: userId,
         checkin_date: newCheckIn.date,
         display_date: newCheckIn.displayDate,
         mood: newCheckIn.mood,
@@ -241,7 +280,7 @@ export default function App() {
 
     setHistoryList(prev => {
       const updated = [newRecord, ...prev];
-      saveStoredHistory(updated);
+      saveStoredHistory(updated, user?.id);
       return updated;
     });
 
@@ -400,7 +439,7 @@ export default function App() {
               historyList={historyList}
               onClearHistory={() => {
                 setHistoryList([]);
-                saveStoredHistory([]);
+                saveStoredHistory([], user?.id);
               }}
               onNavigate={handleNavigate}
               onInspectRecord={handleInspectRecord}
