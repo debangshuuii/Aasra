@@ -127,21 +127,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('[AuthContext] OAuth error in URL:', urlError, params.get('error_description'));
       }
 
-      // --- Implicit flow: Supabase redirected back with #access_token=... ---
-      // detectSessionInUrl:true in supabaseClient will parse the hash automatically
-      // and fire onAuthStateChange with SIGNED_IN. We must NOT call getSession()
-      // or replaceState() here — Supabase hasn't read the hash yet.
-      if (window.location.hash.includes('access_token=')) {
-        waitingForHashSession = true;
-        // Stay loading=true. onAuthStateChange will handle everything.
-        return;
-      }
-
       // --- PKCE flow: ?code=... in query params ---
       const code = params.get('code');
       if (code) {
         try {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          let { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          // Handle device clock skew (token issued in future error) by retrying after 2.5s
+          if (error && (error.message?.includes('future') || error.message?.includes('skew') || error.status === 401)) {
+            console.warn('[AuthContext] Clock skew detected, retrying code exchange in 2.5s...');
+            await new Promise((r) => setTimeout(r, 2500));
+            const retryRes = await supabase.auth.exchangeCodeForSession(code);
+            data = retryRes.data;
+            error = retryRes.error;
+          }
+
           if (!error && data.session && mounted) {
             window.history.replaceState({}, document.title, window.location.pathname);
             await handleUserSession(data.session.user, data.session);
@@ -153,6 +152,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           console.warn('[AuthContext] PKCE code exchange failed:', err);
         }
+      }
+
+      // --- Implicit flow: Supabase redirected back with #access_token=... ---
+      if (window.location.hash.includes('access_token=')) {
+        waitingForHashSession = true;
+        // Schedule a 3s clock-skew retry in case gotrue-js initially rejected a token issued seconds in future
+        setTimeout(async () => {
+          if (!mounted) return;
+          const { data: { session: hashSession } } = await supabase.auth.getSession();
+          if (hashSession) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            await handleUserSession(hashSession.user, hashSession);
+          }
+          setLoading(false);
+        }, 3000);
+        return;
       }
 
       // --- Normal page load: restore existing session ---

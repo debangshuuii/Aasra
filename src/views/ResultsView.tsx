@@ -24,6 +24,13 @@ import {
   Calendar
 } from 'lucide-react';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
+import { 
+  TRAUMA_EXPOSURE_QUESTION, 
+  PC_PTSD_5_QUESTIONS, 
+  GAD_7_QUESTIONS, 
+  GAD_7_OPTIONS, 
+  RISK_QUESTIONS 
+} from '../data/screeningData';
 
 interface ResultsViewProps {
   assessment: AssessmentCompositeResult;
@@ -566,6 +573,209 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 <span>Go to Patient Dashboard</span>
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Comprehensive Itemized Question & Answer Clinical Screener Report */}
+      <div className="mt-10 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-xs print-break-inside-avoid font-sans">
+        {/* Report Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-200 mb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-teal-800 uppercase tracking-wider font-display">
+                Official Clinical Screener Record
+              </span>
+              <span className="text-gray-300">•</span>
+              <span className="text-xs text-gray-500 font-medium">Full Question &amp; Answer Text Breakdown</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-950 font-display">
+              Itemized Questionnaire &amp; Self-Reported Response Record
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Exact questions administered and user selected answers for healthcare provider evaluation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-gray-900 text-white font-semibold text-xs flex items-center gap-2 shadow-xs hover:bg-black transition-colors cursor-pointer print:hidden"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print Report / Save PDF</span>
+          </button>
+        </div>
+
+        {/* MANDATORY CLINICAL DISCLAIMER & DOCTOR CONSULTATION NOTICE */}
+        <div className="bg-amber-50/90 border border-amber-200/90 p-5 rounded-2xl mb-8 flex items-start gap-3.5 shadow-2xs">
+          <Stethoscope className="w-6 h-6 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h3 className="text-xs sm:text-sm font-bold text-amber-950 uppercase tracking-wider font-display">
+              Mandatory Clinical Disclaimer &amp; Doctor Consultation Notice
+            </h3>
+            <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+              This report presents self-reported symptom responses gathered using evidence-based psychological screening instruments (PC-PTSD-5, GAD-7, and DSM-5 frameworks) based on current clinical research theories. <strong>This document is strictly designed for supportive, tracking, and provider-discussion purposes—it DOES NOT constitute a formal medical diagnosis, psychiatric evaluation, or treatment prescription.</strong> Users are strongly advised to always consult a licensed medical doctor, psychiatrist, or clinical psychologist to review these questions and receive a comprehensive clinical diagnostic evaluation.
+            </p>
+          </div>
+        </div>
+
+        {/* SECTION 1: PC-PTSD-5 Question & Answer Table */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider font-display flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
+              1. PC-PTSD-5 Screener (DSM-5 Trauma Instrument) — Score: {traumaExposure ? ptsdScore : 0}/5
+            </h3>
+            <span className="text-xs font-semibold text-gray-500">
+              {traumaExposure ? (ptsdPositive ? 'Positive Screen (≥3)' : 'Below Cutoff (0-2)') : 'Criterion A Negative'}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-gray-200">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100/80 text-gray-700 font-bold uppercase text-[11px] tracking-wider border-b border-gray-200">
+                  <th className="py-3 px-4 w-12">#</th>
+                  <th className="py-3 px-4">Clinical Question Administered</th>
+                  <th className="py-3 px-4 w-36">Cluster Assessed</th>
+                  <th className="py-3 px-4 w-36 text-center">User Response</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-800">
+                {/* Criterion A */}
+                <tr className="hover:bg-gray-50/50">
+                  <td className="py-3 px-4 font-bold text-gray-500">A</td>
+                  <td className="py-3 px-4 font-medium leading-relaxed">
+                    {TRAUMA_EXPOSURE_QUESTION.q}
+                  </td>
+                  <td className="py-3 px-4 text-xs text-gray-500 font-mono">Criterion A Gate</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      traumaExposure ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-gray-100 text-gray-700 border border-gray-200'
+                    }`}>
+                      {traumaExposure ? 'YES (Exposed)' : 'NO (Not Reported)'}
+                    </span>
+                  </td>
+                </tr>
+
+                {/* PC-PTSD-5 Items 1-5 */}
+                {PC_PTSD_5_QUESTIONS.map((q, idx) => {
+                  const isAffirmative = traumaExposure && ptsdAnswers && ptsdAnswers[idx] === true;
+                  return (
+                    <tr key={q.id} className="hover:bg-gray-50/50">
+                      <td className="py-3 px-4 font-bold text-gray-500">Q{q.id}</td>
+                      <td className="py-3 px-4 leading-relaxed">{q.q}</td>
+                      <td className="py-3 px-4 text-xs text-gray-500 font-mono">{q.cluster}</td>
+                      <td className="py-3 px-4 text-center">
+                        {!traumaExposure ? (
+                          <span className="text-gray-400 italic text-xs">Skipped (Score 0)</span>
+                        ) : (
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            isAffirmative ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          }`}>
+                            {isAffirmative ? 'YES (+1 pt)' : 'NO (0 pt)'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* SECTION 2: GAD-7 Anxiety Scale Question & Answer Table */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider font-display flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block" />
+              2. GAD-7 Generalized Anxiety Scale (Past 2 Weeks) — Score: {gad7Score}/21 ({gad7Severity.toUpperCase()})
+            </h3>
+            <span className="text-xs font-semibold text-gray-500">
+              {gad7NeedsReferral ? 'Referral Flag Threshold (≥10)' : 'Routine Range'}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-gray-200">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100/80 text-gray-700 font-bold uppercase text-[11px] tracking-wider border-b border-gray-200">
+                  <th className="py-3 px-4 w-12">#</th>
+                  <th className="py-3 px-4">Over the last 2 weeks, how often have you been bothered by:</th>
+                  <th className="py-3 px-4 w-40">Domain</th>
+                  <th className="py-3 px-4 w-48 text-center">User Response &amp; Points</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-800">
+                {GAD_7_QUESTIONS.map((q, idx) => {
+                  const val = assessment.gad7Answers && typeof assessment.gad7Answers[idx] === 'number'
+                    ? assessment.gad7Answers[idx]
+                    : 0;
+                  const opt = GAD_7_OPTIONS.find(o => o.value === val) || GAD_7_OPTIONS[0];
+
+                  return (
+                    <tr key={q.id} className="hover:bg-gray-50/50">
+                      <td className="py-3 px-4 font-bold text-gray-500">Q{q.id}</td>
+                      <td className="py-3 px-4 leading-relaxed">{q.q}</td>
+                      <td className="py-3 px-4 text-xs text-gray-500 font-mono">{q.area}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          val >= 2 ? 'bg-purple-100 text-purple-900 border-purple-300' :
+                          val === 1 ? 'bg-blue-50 text-blue-900 border-blue-200' :
+                          'bg-gray-100 text-gray-700 border-gray-200'
+                        }`}>
+                          {opt.label} ({val} pt{val !== 1 ? 's' : ''})
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* SECTION 3: Safety & Distress Triage Table */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider font-display flex items-center gap-2 mb-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block" />
+            3. Safety &amp; Acute Distress Triage
+          </h3>
+          <div className="overflow-x-auto rounded-2xl border border-gray-200">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100/80 text-gray-700 font-bold uppercase text-[11px] tracking-wider border-b border-gray-200">
+                  <th className="py-3 px-4 w-12">#</th>
+                  <th className="py-3 px-4">Safety Screening Item</th>
+                  <th className="py-3 px-4 w-48 text-center">User Response</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-800">
+                <tr className="hover:bg-gray-50/50">
+                  <td className="py-3 px-4 font-bold text-gray-500">1</td>
+                  <td className="py-3 px-4 leading-relaxed">{RISK_QUESTIONS[0].q}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      assessment.riskAnswers?.urgentDistress ? 'bg-red-100 text-red-900 border border-red-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    }`}>
+                      {assessment.riskAnswers?.urgentDistress ? 'YES (Distress Noted)' : 'NO'}
+                    </span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50/50">
+                  <td className="py-3 px-4 font-bold text-gray-500">2</td>
+                  <td className="py-3 px-4 leading-relaxed">{RISK_QUESTIONS[1].q}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      assessment.riskAnswers?.selfHarmOrDanger ? 'bg-red-100 text-red-900 border border-red-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    }`}>
+                      {assessment.riskAnswers?.selfHarmOrDanger ? 'YES (Safety Flag)' : 'NO'}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

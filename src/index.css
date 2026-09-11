@@ -56,3 +56,33 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Printable PDF/Paper Report Styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header, nav, button:not(.print-include), .print-hide, .no-print {
+    display: none !important;
+  }
+
+  .max-w-7xl, .max-w-md, .max-w-4xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .bg-white, .bg-gray-50, .bg-teal-50, .bg-amber-50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}
+
