@@ -120,6 +120,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let waitingForHashSession = false;
 
     const init = async () => {
+      // Check for OAuth error in URL query or hash
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error') || params.get('error_description');
+      if (urlError) {
+        console.error('[AuthContext] OAuth error in URL:', urlError, params.get('error_description'));
+      }
+
       // --- Implicit flow: Supabase redirected back with #access_token=... ---
       // detectSessionInUrl:true in supabaseClient will parse the hash automatically
       // and fire onAuthStateChange with SIGNED_IN. We must NOT call getSession()
@@ -131,7 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // --- PKCE flow: ?code=... in query params ---
-      const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       if (code) {
         try {
@@ -141,6 +147,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await handleUserSession(data.session.user, data.session);
             setLoading(false);
             return;
+          } else if (error) {
+            console.warn('[AuthContext] PKCE exchange error:', error.message);
           }
         } catch (err) {
           console.warn('[AuthContext] PKCE code exchange failed:', err);
