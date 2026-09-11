@@ -4,11 +4,14 @@ import {
   calculatePcPtsd5Score, 
   calculateGad7Score, 
   getGad7Severity, 
-  determineRiskLevel, 
+  determineRiskLevel,
   INITIAL_HISTORY,
   loadStoredCheckIns,
   saveStoredCheckIns,
-  formatDateKey
+  loadStoredHistory,
+  saveStoredHistory,
+  formatDateKey,
+  formatDisplayDate
 } from './data/screeningData';
 
 import { Header } from './components/Header';
@@ -50,7 +53,7 @@ export default function App() {
   const [selfHarmOrDanger, setSelfHarmOrDanger] = useState<boolean | null>(null);
 
   // Saved Screening History
-  const [historyList, setHistoryList] = useState<AssessmentRecord[]>(INITIAL_HISTORY);
+  const [historyList, setHistoryList] = useState<AssessmentRecord[]>(() => loadStoredHistory());
 
   // Daily Check-ins State (persisted locally)
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(() => loadStoredCheckIns());
@@ -125,6 +128,10 @@ export default function App() {
   const todayCheckIn = checkIns.find(c => c.date === todayKey);
 
   // Computed / Current Composite Assessment Result
+  const initialNow = new Date();
+  const initialDateStr = initialNow.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const initialTimeStr = initialNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
   const [currentAssessment, setCurrentAssessment] = useState<AssessmentCompositeResult>({
     traumaExposure: true,
     ptsdAnswers: [true, true, true, false, true],
@@ -138,7 +145,10 @@ export default function App() {
     riskAnswers: {
       urgentDistress: false,
       selfHarmOrDanger: false,
-    }
+    },
+    date: initialDateStr,
+    completedAt: initialNow.getTime(),
+    formattedDateTime: `${initialDateStr} at ${initialTimeStr}`
   });
 
   // Always glide smoothly to the top whenever navigation changes
@@ -184,6 +194,11 @@ export default function App() {
     const gad7NeedsReferral = gad7Score >= 10;
     const riskLevel = determineRiskLevel(urgentDistress, selfHarmOrDanger);
 
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const formattedDateTime = `${dateStr} at ${timeStr}`;
+
     const completed: AssessmentCompositeResult = {
       traumaExposure,
       ptsdAnswers,
@@ -197,17 +212,19 @@ export default function App() {
       riskAnswers: {
         urgentDistress,
         selfHarmOrDanger
-      }
+      },
+      date: dateStr,
+      completedAt: now.getTime(),
+      formattedDateTime
     };
 
     setCurrentAssessment(completed);
 
     // Save to historical timeline log
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const newRecord: AssessmentRecord = {
       id: `rec-${Date.now()}`,
       date: dateStr,
+      timestamp: now.getTime(),
       score: ptsdScore,
       total: 5,
       isPositive: ptsdPositive,
@@ -222,7 +239,11 @@ export default function App() {
       riskLevel
     };
 
-    setHistoryList(prev => [newRecord, ...prev]);
+    setHistoryList(prev => {
+      const updated = [newRecord, ...prev];
+      saveStoredHistory(updated);
+      return updated;
+    });
 
     // Sync to Supabase if patient is signed in
     if (user) {
@@ -253,6 +274,10 @@ export default function App() {
     const gadScore = rec.gad7Score ?? 8;
     const gadSev = rec.gad7Severity ?? getGad7Severity(gadScore);
 
+    const formattedDateTime = rec.timestamp
+      ? `${rec.date} at ${new Date(rec.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+      : rec.date;
+
     setCurrentAssessment({
       traumaExposure: rec.traumaExposure ?? (rec.score > 0),
       ptsdAnswers: rec.answers,
@@ -263,7 +288,10 @@ export default function App() {
       gad7Severity: gadSev,
       gad7NeedsReferral: gadScore >= 10,
       riskLevel: rec.riskLevel ?? 'routine',
-      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false }
+      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false },
+      date: rec.date,
+      completedAt: rec.timestamp,
+      formattedDateTime
     });
     handleNavigate('results');
   };
@@ -363,13 +391,17 @@ export default function App() {
               onOpenPreviousCheckIns={() => setIsPreviousCheckInsModalOpen(true)}
               onOpenGrounding={() => setIsGroundingModalOpen(true)}
               onOpenCrisis={() => setIsCrisisModalOpen(true)}
+              historyList={historyList}
             />
           )}
 
           {currentView === 'history' && (
             <HistoryView
               historyList={historyList}
-              onClearHistory={() => setHistoryList([])}
+              onClearHistory={() => {
+                setHistoryList([]);
+                saveStoredHistory([]);
+              }}
               onNavigate={handleNavigate}
               onInspectRecord={handleInspectRecord}
               checkIns={checkIns}

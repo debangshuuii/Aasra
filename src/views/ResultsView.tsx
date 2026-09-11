@@ -20,8 +20,10 @@ import {
   RefreshCw, 
   Flame, 
   FileDown,
-  MapPin
+  MapPin,
+  Calendar
 } from 'lucide-react';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 interface ResultsViewProps {
   assessment: AssessmentCompositeResult;
@@ -43,6 +45,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const [aiReport, setAiReport] = useState<string>('');
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(true);
   const [activeModel, setActiveModel] = useState<string>('gemini-3.8-flash');
+
+  const assessmentDateStr = assessment.formattedDateTime || assessment.date || new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 
   const {
     traumaExposure,
@@ -71,7 +79,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             ptsdAnswers,
             gad7Score,
             gad7Severity,
-            riskLevel
+            riskLevel,
+            assessmentDate: assessmentDateStr
           })
         });
 
@@ -85,7 +94,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         console.warn('Could not fetch from backend, generating client fallback synthesis');
         if (isMounted) {
           setAiReport(
-            `### Comprehensive Clinical Screener Summary\n\n` +
+            `### Comprehensive Clinical Screener Summary (${assessmentDateStr})\n\n` +
             `• **PC-PTSD-5 Trauma Screener**: ${traumaExposure ? `${ptsdScore}/5 Affirmative` : 'Criterion A Trauma Not Indicated (0/5)'}. ${
               ptsdScore >= 4 
                 ? 'Meets established VA research clinical cut-point (≥4), indicating significant traumatic stress presentation.' 
@@ -111,7 +120,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
     fetchAssessment();
     return () => { isMounted = false; };
-  }, [traumaExposure, ptsdScore, ptsdAnswers, gad7Score, gad7Severity, riskLevel]);
+  }, [traumaExposure, ptsdScore, ptsdAnswers, gad7Score, gad7Severity, riskLevel, assessmentDateStr]);
 
   const handlePrint = () => {
     window.print();
@@ -129,7 +138,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       gad7Severity: 'severe',
       gad7NeedsReferral: true,
       riskLevel: 'routine',
-      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false }
+      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false },
+      date: assessment.date || assessmentDateStr,
+      completedAt: assessment.completedAt || Date.now(),
+      formattedDateTime: assessment.formattedDateTime || `${assessmentDateStr} (Simulated)`
     });
   };
 
@@ -144,7 +156,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       gad7Severity: 'moderate',
       gad7NeedsReferral: true,
       riskLevel: 'routine',
-      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false }
+      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false },
+      date: assessment.date || assessmentDateStr,
+      completedAt: assessment.completedAt || Date.now(),
+      formattedDateTime: assessment.formattedDateTime || `${assessmentDateStr} (Simulated)`
     });
   };
 
@@ -159,7 +174,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       gad7Severity: 'minimal',
       gad7NeedsReferral: false,
       riskLevel: 'routine',
-      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false }
+      riskAnswers: { urgentDistress: false, selfHarmOrDanger: false },
+      date: assessment.date || assessmentDateStr,
+      completedAt: assessment.completedAt || Date.now(),
+      formattedDateTime: assessment.formattedDateTime || `${assessmentDateStr} (Simulated)`
     });
   };
 
@@ -217,6 +235,36 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           <Printer className="w-3.5 h-3.5 text-gray-600" />
           <span>Print / Export PDF Summary</span>
         </button>
+      </div>
+
+      {/* Clinical Assessment Overview Header with Dynamic Completion Date */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-200 shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-teal-800 uppercase tracking-wider font-display">
+              Clinical Screening Outcome
+            </span>
+            <span className="text-gray-300">•</span>
+            <span className="text-xs text-gray-500 font-medium">
+              PC-PTSD-5 &amp; GAD-7 Dual Battery
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-950 font-display">
+            Preliminary Trauma &amp; Anxiety Synthesis
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-teal-50/70 border border-teal-200/80 text-xs shrink-0">
+          <Calendar className="w-4 h-4 text-teal-700 shrink-0" />
+          <div>
+            <span className="text-[10px] font-bold text-teal-900/60 uppercase tracking-wider block leading-none mb-0.5">
+              Assessment Date
+            </span>
+            <span className="font-bold text-teal-950">
+              {assessmentDateStr}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Urgent Risk Banner if flagged */}
@@ -425,7 +473,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     Step 5: AI Preliminary Assessment &amp; Referral
                   </h3>
                   <span className="text-[11px] text-gray-500 font-medium flex items-center gap-1">
-                    Synthesized with Saathi &bull; Model: {activeModel}
+                    Assessment Date: {assessmentDateStr} &bull; Synthesized with Saathi &bull; Model: {activeModel}
                   </span>
                 </div>
               </div>
@@ -439,14 +487,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
 
             {/* Live AI Report Body */}
-            <div className="p-5 rounded-2xl bg-gray-50/90 border border-gray-200/90 mb-6 text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+            <div className="p-5 rounded-2xl bg-gray-50/90 border border-gray-200/90 mb-6 text-xs sm:text-sm text-gray-800 leading-relaxed font-sans">
               {isLoadingAi ? (
                 <div className="py-8 text-center text-gray-500 flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-teal-700" />
                   <span>Generating trauma-informed clinical synthesis and care pathways...</span>
                 </div>
               ) : (
-                aiReport
+                <MarkdownRenderer content={aiReport} />
               )}
             </div>
 

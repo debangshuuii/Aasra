@@ -10,6 +10,7 @@ import {
   archiveActiveSessionBeforeNew
 } from '../utils/chatStorage';
 import { ChatHistoryModal } from '../components/ChatHistoryModal';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { 
   Bot, 
   RotateCcw, 
@@ -486,13 +487,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ onOpenGrounding, onOpenCrisi
                     </div>
                   )}
                   <div
-                    className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+                    className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                       msg.sender === 'user'
                         ? 'bg-black text-white rounded-tr-none shadow-xs'
                         : 'bg-gray-50/80 border border-gray-200/80 text-gray-950 rounded-tl-none shadow-2xs'
                     }`}
                   >
-                    {msg.text}
+                    <MarkdownRenderer content={msg.text} isUser={msg.sender === 'user'} />
                   </div>
                 </div>
               </div>

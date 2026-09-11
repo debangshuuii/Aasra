@@ -13,6 +13,7 @@ import {
   getActiveSessionPin,
   setActiveSessionPin
 } from '../utils/chatStorage';
+import { stripMarkdown } from './MarkdownRenderer';
 import {
   Lock,
   Unlock,
@@ -649,7 +650,9 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
                   {sessions.map((sess) => {
                     const isCurrent = activeSession.id === sess.id;
                     const messageCount = sess.messages.length;
-                    const userSnippet = sess.messages.find(m => m.sender === 'user')?.text || 'Initial consultation';
+                    const userSnippet = stripMarkdown(
+                      sess.messages.find(m => m.sender === 'user')?.text || 'Initial consultation'
+                    );
 
                     return (
                       <div

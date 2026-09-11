@@ -286,36 +286,51 @@ export const GROUNDING_STEPS: GroundingStep[] = [
   }
 ];
 
-export const INITIAL_HISTORY: AssessmentRecord[] = [
-  {
-    id: 'rec-1',
-    date: 'Oct 24, 2025',
-    score: 4,
-    total: 5,
-    isPositive: true,
-    statusText: 'Positive PTSD Screen',
-    summary: 'Reported Criterion A trauma exposure, intrusive memories, avoidance, and hypervigilance. GAD-7 score: 14 (Moderate Anxiety). Flagged for trauma-informed referral.',
-    answers: [true, true, true, false, true],
-    traumaExposure: true,
-    gad7Score: 14,
-    gad7Severity: 'moderate',
-    riskLevel: 'routine'
-  },
-  {
-    id: 'rec-2',
-    date: 'Sep 12, 2025',
-    score: 3,
-    total: 5,
-    isPositive: true,
-    statusText: 'Borderline Screen',
-    summary: 'Avoidance and hyperarousal noted during workplace transition. GAD-7 score: 8 (Mild Anxiety). Somatic grounding recommended.',
-    answers: [true, true, true, false, false],
-    traumaExposure: true,
-    gad7Score: 8,
-    gad7Severity: 'mild',
-    riskLevel: 'routine'
-  }
-];
+export function getInitialHistory(): AssessmentRecord[] {
+  const now = new Date();
+  
+  // Calculate relative baseline dates using current device year & month in local timezone
+  const date1 = new Date(now);
+  date1.setDate(now.getDate() - 14); // 2 weeks ago
+  
+  const date2 = new Date(now);
+  date2.setDate(now.getDate() - 45); // ~1.5 months ago
+
+  return [
+    {
+      id: 'rec-1',
+      date: date1.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      timestamp: date1.getTime(),
+      score: 4,
+      total: 5,
+      isPositive: true,
+      statusText: 'Positive PTSD Screen',
+      summary: 'Reported Criterion A trauma exposure, intrusive memories, avoidance, and hypervigilance. GAD-7 score: 14 (Moderate Anxiety). Flagged for trauma-informed referral.',
+      answers: [true, true, true, false, true],
+      traumaExposure: true,
+      gad7Score: 14,
+      gad7Severity: 'moderate',
+      riskLevel: 'routine'
+    },
+    {
+      id: 'rec-2',
+      date: date2.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      timestamp: date2.getTime(),
+      score: 3,
+      total: 5,
+      isPositive: true,
+      statusText: 'Borderline Screen',
+      summary: 'Avoidance and hyperarousal noted during workplace transition. GAD-7 score: 8 (Mild Anxiety). Somatic grounding recommended.',
+      answers: [true, true, true, false, false],
+      traumaExposure: true,
+      gad7Score: 8,
+      gad7Severity: 'mild',
+      riskLevel: 'routine'
+    }
+  ];
+}
+
+export const INITIAL_HISTORY: AssessmentRecord[] = getInitialHistory();
 
 export const BRAND_ASSETS = {
   logoUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1Xw8qGu_DVrHKNXQwm6z8cDtlI8h9BIEuzHwJAa5hXG_3F2_8DRyekp1UAu45MHepP-HSGKo2GL90xOLSQLXoPN3eno-xiw9GJA6Q7wG0H2XXMpfCkNpVWz1mCZ2DL9XNt67c4KlHAf9iGCjeDA0VluInPaTRLc_zUXZ_5uU3A8Awkvgwl-uf9k3MXVEVjuG9qQnRruxcqGhiVyALG3FOLcCkH8a5g318RlrlrT9lX8D-0cupn42gVblDEh',
@@ -489,7 +504,23 @@ export function loadStoredCheckIns(): DailyCheckIn[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const currentYear = new Date().getFullYear();
+        let migrated = false;
+        const cleaned = parsed.map((c: DailyCheckIn) => {
+          if ((c.date && c.date.includes('2025')) || (c.displayDate && c.displayDate.includes('2025'))) {
+            migrated = true;
+            return {
+              ...c,
+              date: c.date ? c.date.replace('2025', String(currentYear)) : c.date,
+              displayDate: c.displayDate ? c.displayDate.replace('2025', String(currentYear)) : c.displayDate
+            };
+          }
+          return c;
+        });
+        if (migrated) {
+          saveStoredCheckIns(cleaned);
+        }
+        return cleaned;
       }
     }
   } catch (e) {
@@ -509,5 +540,51 @@ export function saveStoredCheckIns(checkIns: DailyCheckIn[]): void {
     localStorage.setItem(CHECKIN_STORAGE_KEY, JSON.stringify(checkIns));
   } catch (e) {
     console.warn('Could not save check-ins to localStorage:', e);
+  }
+}
+
+const HISTORY_STORAGE_KEY = 'mindtrauma_assessment_history';
+
+export function loadStoredHistory(): AssessmentRecord[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const currentYear = new Date().getFullYear();
+        let migrated = false;
+        const cleaned = parsed.map((item: AssessmentRecord) => {
+          if (item.date && item.date.includes('2025')) {
+            migrated = true;
+            return {
+              ...item,
+              date: item.date.replace('2025', String(currentYear))
+            };
+          }
+          return item;
+        });
+        if (migrated) {
+          saveStoredHistory(cleaned);
+        }
+        return cleaned;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not read history from localStorage:', e);
+  }
+  const initial = getInitialHistory();
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(initial));
+  } catch {
+    // Ignore in test envs
+  }
+  return initial;
+}
+
+export function saveStoredHistory(list: AssessmentRecord[]): void {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Could not save history to localStorage:', e);
   }
 }

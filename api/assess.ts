@@ -7,8 +7,9 @@ function getClinicalAssessmentFallback(data: {
   gad7Score: number;
   gad7Severity: string;
   riskLevel: string;
+  assessmentDate?: string;
 }): string {
-  const { traumaExposure, ptsdScore, gad7Score, gad7Severity, riskLevel } = data;
+  const { traumaExposure, ptsdScore, gad7Score, gad7Severity, riskLevel, assessmentDate } = data;
 
   let riskNote = '';
   if (riskLevel === 'critical' || riskLevel === 'elevated') {
@@ -48,7 +49,8 @@ function getClinicalAssessmentFallback(data: {
 
   const disclaimer = `*Clinical Boundary: The PC-PTSD-5 and GAD-7 are screening instruments designed to identify individuals who may benefit from further evaluation. They do not constitute a formal psychiatric diagnosis. A positive screen warrants comprehensive assessment by a qualified clinician.*`;
 
-  return `${riskNote}### Comprehensive Clinical Synthesis\n\n${traumaSection}\n\n${gadSection}\n\n### Care & Treatment Pathways\n${pathways}\n\n### Next Steps & Referral\n${referral}\n\n---\n${disclaimer}`;
+  const dateHeader = assessmentDate ? ` (${assessmentDate})` : '';
+  return `${riskNote}### Comprehensive Clinical Synthesis${dateHeader}\n\n${traumaSection}\n\n${gadSection}\n\n### Care & Treatment Pathways\n${pathways}\n\n### Next Steps & Referral\n${referral}\n\n---\n${disclaimer}`;
 }
 
 export default async function handler(req: any, res: any) {
@@ -77,7 +79,8 @@ export default async function handler(req: any, res: any) {
       ptsdAnswers = [],
       gad7Score = 0,
       gad7Severity = 'minimal',
-      riskLevel = 'routine'
+      riskLevel = 'routine',
+      assessmentDate
     } = req.body || {};
 
     const fallbackText = getClinicalAssessmentFallback({
@@ -86,7 +89,8 @@ export default async function handler(req: any, res: any) {
       ptsdAnswers: Array.isArray(ptsdAnswers) ? ptsdAnswers : [],
       gad7Score: Number(gad7Score) || 0,
       gad7Severity: String(gad7Severity),
-      riskLevel: String(riskLevel)
+      riskLevel: String(riskLevel),
+      assessmentDate: assessmentDate ? String(assessmentDate) : undefined
     });
 
     const availableKeys = getGeminiApiKeys();
@@ -95,6 +99,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const prompt = `Synthesize these clinical screening results for a victim/patient into an empathetic, structured preliminary assessment report with referral recommendations:
+- Assessment Date: ${assessmentDate || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
 - PC-PTSD-5 Criterion A Trauma Exposure: ${traumaExposure ? 'YES' : 'NO'}
 - PC-PTSD-5 PTSD Score: ${traumaExposure ? ptsdScore : 0} of 5 (Cut-point: 3+ indicates positive screen, 4 is VA research cut-point)
 - GAD-7 Anxiety Score: ${gad7Score} of 21 (Severity: ${gad7Severity}, Referral threshold: 10+)

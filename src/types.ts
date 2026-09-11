@@ -45,6 +45,9 @@ export interface AssessmentCompositeResult {
     selfHarmOrDanger: boolean | null;
   };
   aiSummary?: string;
+  date?: string; // Formatted date string (e.g. 'Sep 11, 2026')
+  completedAt?: number; // Exact completion epoch timestamp
+  formattedDateTime?: string; // e.g. 'Sep 11, 2026 at 3:45 PM'
 }
 
 export interface SymptomCluster {
@@ -72,6 +75,7 @@ export interface ResourceItem {
 export interface AssessmentRecord {
   id: string;
   date: string;
+  timestamp?: number;
   score: number; // PC-PTSD-5 score
   total: number;
   isPositive: boolean;

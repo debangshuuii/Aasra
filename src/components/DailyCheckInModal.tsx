@@ -82,14 +82,18 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const submitTime = new Date();
+    const submitDateKey = formatDateKey(submitTime);
+    const submitDisplayDate = formatDisplayDate(submitTime);
+
     const selectedMoodOption = MOOD_OPTIONS.find(m => m.score === mood);
     const moodLabel = selectedMoodOption ? selectedMoodOption.label : 'Prefer not to say';
 
     const record: DailyCheckIn = {
       id: todayCheckIn ? todayCheckIn.id : `checkin-${Date.now()}`,
-      date: dateKey,
-      displayDate: displayDateStr,
-      timestamp: Date.now(),
+      date: submitDateKey,
+      displayDate: submitDisplayDate,
+      timestamp: submitTime.getTime(),
       mood,
       moodLabel,
       dayOverall,

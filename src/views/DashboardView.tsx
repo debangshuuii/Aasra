@@ -1,5 +1,5 @@
 import React from 'react';
-import { ViewId, DailyCheckIn } from '../types';
+import { ViewId, DailyCheckIn, AssessmentRecord } from '../types';
 import { 
   getCurrentWeekDays, 
   formatDateKey, 
@@ -33,6 +33,7 @@ interface DashboardViewProps {
   onOpenPreviousCheckIns: () => void;
   onOpenGrounding?: () => void;
   onOpenCrisis?: () => void;
+  historyList?: AssessmentRecord[];
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
@@ -41,8 +42,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenCheckIn,
   onOpenPreviousCheckIns,
   onOpenGrounding,
-  onOpenCrisis
+  onOpenCrisis,
+  historyList
 }) => {
+  const latestAssessment = historyList && historyList.length > 0 ? historyList[0] : undefined;
   const todayKey = formatDateKey(new Date());
   const todayCheckIn = checkIns.find(c => c.date === todayKey);
   const weeklyDays = getCurrentWeekDays(checkIns, new Date());
@@ -113,24 +116,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* 4 Metrics Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex items-center gap-3.5">
-          <div className="w-13 h-13 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center font-bold text-xl border border-red-200 font-display shrink-0">
-            4/5
+          <div className={`w-13 h-13 rounded-2xl flex items-center justify-center font-bold text-xl border font-display shrink-0 ${
+            !latestAssessment
+              ? 'bg-gray-100 text-gray-500 border-gray-200'
+              : latestAssessment.score >= 3
+              ? 'bg-red-100 text-red-700 border-red-200'
+              : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+          }`}>
+            {latestAssessment ? `${latestAssessment.score}/${latestAssessment.total || 5}` : '–'}
           </div>
           <div>
             <span className="text-xs text-gray-500 block">Latest PC-PTSD-5</span>
-            <span className="text-sm font-bold text-gray-900 font-display block">Positive Screen</span>
-            <span className="text-[11px] text-gray-400 block mt-0.5">Oct 24 • VA Cut-point ≥4</span>
+            <span className="text-sm font-bold text-gray-900 font-display block">
+              {latestAssessment ? latestAssessment.statusText : 'No screeners yet'}
+            </span>
+            <span className="text-[11px] text-gray-400 block mt-0.5">
+              {latestAssessment ? `${latestAssessment.date} • VA Cut-point ≥4` : 'Take your first screener'}
+            </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex items-center gap-3.5">
           <div className="w-13 h-13 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl border border-purple-200 font-display shrink-0">
-            14/21
+            {latestAssessment && typeof latestAssessment.gad7Score === 'number' ? `${latestAssessment.gad7Score}/21` : '–'}
           </div>
           <div>
             <span className="text-xs text-gray-500 block">Latest GAD-7</span>
-            <span className="text-sm font-bold text-gray-900 font-display block">Moderate Anxiety</span>
-            <span className="text-[11px] text-purple-700 font-medium block mt-0.5">Referral flag (≥10)</span>
+            <span className="text-sm font-bold text-gray-900 font-display block">
+              {latestAssessment && latestAssessment.gad7Severity
+                ? `${latestAssessment.gad7Severity.charAt(0).toUpperCase() + latestAssessment.gad7Severity.slice(1)} Anxiety`
+                : 'Not assessed'}
+            </span>
+            <span className="text-[11px] text-purple-700 font-medium block mt-0.5">
+              {latestAssessment ? latestAssessment.date : 'Take your first screener'}
+            </span>
           </div>
         </div>
 
