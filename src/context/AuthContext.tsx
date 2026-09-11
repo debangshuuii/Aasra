@@ -118,14 +118,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const init = async () => {
-      // Handle PKCE OAuth code exchange: if Google redirected back with ?code=...
+      // --- Implicit flow: Supabase redirected back with #access_token=... in the hash ---
+      // detectSessionInUrl:true inside supabaseClient handles this automatically via
+      // onAuthStateChange (SIGNED_IN event). We must NOT call getSession() first or it
+      // returns null before the hash is processed. Just clean the URL and wait.
+      if (window.location.hash.includes('access_token=')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // loading stays true — onAuthStateChange will fire and set it false once ready
+        return;
+      }
+
+      // --- PKCE flow: Supabase redirected back with ?code=... in query params ---
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       if (code) {
         try {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (!error && data.session && mounted) {
-            // Clean up the URL without reloading
             window.history.replaceState({}, document.title, window.location.pathname);
             await handleUserSession(data.session.user, data.session);
             setLoading(false);
@@ -136,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Check for existing active session
+      // --- Normal case: check if there is already an active session ---
       const { data: { session: existingSession } } = await supabase.auth.getSession();
       if (!mounted) return;
       await handleUserSession(existingSession?.user ?? null, existingSession ?? null);
@@ -145,10 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     init();
 
-    // Listen for auth state changes (sign in, sign out, token refresh)
+    // onAuthStateChange handles: implicit hash sign-in, sign-out, token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
+
+        // Clean any leftover hash fragment on sign-in events
+        if (window.location.hash.includes('access_token=')) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         await handleUserSession(newSession?.user ?? null, newSession ?? null);
         setLoading(false);
       }
