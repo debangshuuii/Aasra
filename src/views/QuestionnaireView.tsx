@@ -476,8 +476,9 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
           {/* 4 Tactile Frequency Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
-            {GAD_7_OPTIONS.map((opt) => {
+            {GAD_7_OPTIONS.map((opt, idx) => {
               const isSelected = gad7Answers[gad7Index] === opt.value;
+              const optionLetters = ['A', 'B', 'C', 'D'];
               return (
                 <button
                   key={opt.value}
@@ -493,14 +494,14 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                     <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm border transition-colors ${
                       isSelected ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-300'
                     }`}>
-                      {opt.value}
+                      {optionLetters[idx] || (idx + 1)}
                     </span>
                     <div>
                       <span className="text-sm sm:text-base font-bold text-gray-950 block font-display">
                         {opt.label}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {opt.subtitle} • Score: {opt.value}
+                        {opt.subtitle}
                       </span>
                     </div>
                   </div>

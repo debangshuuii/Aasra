@@ -551,7 +551,7 @@ export const WellbeingView: React.FC<WellbeingViewProps> = ({
                             {opt.label}
                           </span>
                           <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-violet-200' : 'text-gray-400'}`}>
-                            Score: {opt.value} · {opt.sublabel}
+                            {opt.sublabel}
                           </span>
                         </button>
                       );
