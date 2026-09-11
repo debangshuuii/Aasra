@@ -550,9 +550,11 @@ export const WellbeingView: React.FC<WellbeingViewProps> = ({
                           <span className={`text-xs font-bold leading-tight ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                             {opt.label}
                           </span>
-                          <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-violet-200' : 'text-gray-400'}`}>
-                            {opt.sublabel}
-                          </span>
+                          {opt.sublabel && (
+                            <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-violet-200' : 'text-gray-400'}`}>
+                              {opt.sublabel}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

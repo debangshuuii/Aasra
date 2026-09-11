@@ -648,32 +648,27 @@ export const WHO5_QUESTIONS: { id: number; topic: string; placeholder: string }[
   {
     id: 1,
     topic: 'Cheerful mood',
-    placeholder:
-      'Over the last two weeks, I have felt cheerful and in good spirits.',
+    placeholder: 'I have felt cheerful and in good spirits.',
   },
   {
     id: 2,
     topic: 'Calm and relaxed',
-    placeholder:
-      'Over the last two weeks, I have felt calm and relaxed.',
+    placeholder: 'I have felt calm and relaxed.',
   },
   {
     id: 3,
     topic: 'Active and vigorous',
-    placeholder:
-      'Over the last two weeks, I have felt active and vigorous.',
+    placeholder: 'I have felt active and vigorous.',
   },
   {
     id: 4,
     topic: 'Woke up fresh and rested',
-    placeholder:
-      'Over the last two weeks, I woke up feeling fresh and rested.',
+    placeholder: 'I woke up feeling fresh and rested.',
   },
   {
     id: 5,
     topic: 'Daily life filled with interesting things',
-    placeholder:
-      'Over the last two weeks, my daily life has been filled with things that interest me.',
+    placeholder: 'My daily life has been filled with things that interest me.',
   },
 ];
 
@@ -681,13 +676,13 @@ export const WHO5_QUESTIONS: { id: number; topic: string; placeholder: string }[
  * WHO-5 response options.
  * Scores range from 0 (At no time) to 5 (All of the time).
  */
-export const WHO5_OPTIONS: { value: number; label: string; sublabel: string }[] = [
-  { value: 0, label: 'At no time',             sublabel: '0 days' },
-  { value: 1, label: 'Some of the time',        sublabel: '1–5 days' },
-  { value: 2, label: 'Less than half the time', sublabel: '6–7 days' },
-  { value: 3, label: 'More than half the time', sublabel: '8–9 days' },
-  { value: 4, label: 'Most of the time',         sublabel: '10–13 days' },
-  { value: 5, label: 'All of the time',          sublabel: '14 days' },
+export const WHO5_OPTIONS: { value: number; label: string; sublabel?: string }[] = [
+  { value: 0, label: 'At no time' },
+  { value: 1, label: 'Some of the time' },
+  { value: 2, label: 'Less than half the time' },
+  { value: 3, label: 'More than half the time' },
+  { value: 4, label: 'Most of the time' },
+  { value: 5, label: 'All of the time' },
 ];
 
 /**
