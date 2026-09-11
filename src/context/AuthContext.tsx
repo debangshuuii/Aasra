@@ -116,19 +116,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    // Track whether we're waiting for the hash-based implicit flow
+    let waitingForHashSession = false;
 
     const init = async () => {
-      // --- Implicit flow: Supabase redirected back with #access_token=... in the hash ---
-      // detectSessionInUrl:true inside supabaseClient handles this automatically via
-      // onAuthStateChange (SIGNED_IN event). We must NOT call getSession() first or it
-      // returns null before the hash is processed. Just clean the URL and wait.
+      // --- Implicit flow: Supabase redirected back with #access_token=... ---
+      // detectSessionInUrl:true in supabaseClient will parse the hash automatically
+      // and fire onAuthStateChange with SIGNED_IN. We must NOT call getSession()
+      // or replaceState() here — Supabase hasn't read the hash yet.
       if (window.location.hash.includes('access_token=')) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // loading stays true — onAuthStateChange will fire and set it false once ready
+        waitingForHashSession = true;
+        // Stay loading=true. onAuthStateChange will handle everything.
         return;
       }
 
-      // --- PKCE flow: Supabase redirected back with ?code=... in query params ---
+      // --- PKCE flow: ?code=... in query params ---
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       if (code) {
@@ -145,34 +147,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // --- Normal case: check if there is already an active session ---
+      // --- Normal page load: restore existing session ---
       const { data: { session: existingSession } } = await supabase.auth.getSession();
       if (!mounted) return;
       await handleUserSession(existingSession?.user ?? null, existingSession ?? null);
       setLoading(false);
     };
 
-    init();
-
-    // onAuthStateChange handles: implicit hash sign-in, sign-out, token refresh
+    // Register onAuthStateChange FIRST so it's ready before init() runs
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
 
-        // Clean any leftover hash fragment on sign-in events
+        await handleUserSession(newSession?.user ?? null, newSession ?? null);
+        setLoading(false);
+
+        // Clean the hash from the URL AFTER Supabase has processed it
         if (window.location.hash.includes('access_token=')) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
-
-        await handleUserSession(newSession?.user ?? null, newSession ?? null);
-        setLoading(false);
       }
     );
+
+    init();
+
+    // Safety net: if we were waiting for hash auth and it never arrived
+    // (e.g. Supabase failed to parse), stop loading after 5 seconds
+    const safetyTimeout = waitingForHashSession
+      ? setTimeout(() => {
+          if (mounted) setLoading(false);
+        }, 5000)
+      : undefined;
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      if (safetyTimeout) clearTimeout(safetyTimeout);
     };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
