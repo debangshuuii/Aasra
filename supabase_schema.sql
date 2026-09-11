@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS public.daily_checkins (
     display_date TEXT,
     mood INTEGER CHECK (mood >= 1 AND mood <= 5),
     mood_label TEXT,
+    energy_level TEXT,
+    mental_clarity TEXT,
     day_overall TEXT,
     stress_level TEXT,
     sleep_quality TEXT,
@@ -264,3 +266,42 @@ CREATE POLICY "Users can delete messages in their sessions"
             AND (chat_sessions.user_id = auth.uid())
         )
     );
+
+-- ==============================================================================
+-- 10. WHO-5 Well-Being Assessments Table  (optional — for cloud sync)
+-- Stores WHO-5 assessment results per user.
+-- Run this section separately once ready to enable Supabase sync.
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.who5_assessments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    assessment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    raw_score INTEGER NOT NULL CHECK (raw_score >= 0 AND raw_score <= 25),
+    percent_score INTEGER NOT NULL CHECK (percent_score >= 0 AND percent_score <= 100),
+    answers JSONB DEFAULT '[]'::jsonb,  -- Array of 5 values (0–5)
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Performance index
+CREATE INDEX IF NOT EXISTS idx_who5_user_date
+    ON public.who5_assessments(user_id, assessment_date DESC);
+
+-- Enable RLS
+ALTER TABLE public.who5_assessments ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies (same pattern as assessments table)
+DROP POLICY IF EXISTS "Users can view own WHO-5 assessments" ON public.who5_assessments;
+CREATE POLICY "Users can view own WHO-5 assessments"
+    ON public.who5_assessments FOR SELECT
+    USING (auth.uid() = user_id OR user_id IS NULL);
+
+DROP POLICY IF EXISTS "Users can insert WHO-5 assessments" ON public.who5_assessments;
+CREATE POLICY "Users can insert WHO-5 assessments"
+    ON public.who5_assessments FOR INSERT
+    WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+
+DROP POLICY IF EXISTS "Users can delete own WHO-5 assessments" ON public.who5_assessments;
+CREATE POLICY "Users can delete own WHO-5 assessments"
+    ON public.who5_assessments FOR DELETE
+    USING (auth.uid() = user_id);
+

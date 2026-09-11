@@ -8,7 +8,8 @@ import {
   GroundingStep, 
   AssessmentRecord,
   DailyCheckIn,
-  WeeklyTrendDay
+  WeeklyTrendDay,
+  Who5Record
 } from '../types';
 
 export const TRAUMA_EXPOSURE_QUESTION: Question = {
@@ -342,11 +343,53 @@ export const BRAND_ASSETS = {
 // ==========================================
 
 export const MOOD_OPTIONS: { score: 1 | 2 | 3 | 4 | 5; label: string; emoji: string; description: string; color: string }[] = [
-  { score: 1, label: 'Very Low', emoji: '😔', description: 'Feeling deeply down, exhausted, or numb', color: '#DC2626' },
-  { score: 2, label: 'Low', emoji: '🙁', description: 'Feeling sad, drained, or struggling', color: '#EA580C' },
-  { score: 3, label: 'Okay / Steady', emoji: '😐', description: 'Holding steady, neither high nor low', color: '#D97706' },
-  { score: 4, label: 'Good', emoji: '🙂', description: 'Feeling calm, content, and grounded', color: '#0D9488' },
-  { score: 5, label: 'Very Good', emoji: '😊', description: 'Feeling peaceful, uplifted, or safe', color: '#059669' }
+  { score: 1, label: 'Very Low / Distressed', emoji: '😔', description: 'Feeling deeply down, exhausted, overwhelmed, or numb', color: '#DC2626' },
+  { score: 2, label: 'Low / Fragile', emoji: '🙁', description: 'Feeling sad, drained, anxious, or struggling to cope', color: '#EA580C' },
+  { score: 3, label: 'Steady / Holding On', emoji: '😐', description: 'Holding steady, neither high nor low, getting through the day', color: '#D97706' },
+  { score: 4, label: 'Good / Grounded', emoji: '🙂', description: 'Feeling calm, content, present, and safe in your body', color: '#0D9488' },
+  { score: 5, label: 'Very Good / Peaceful', emoji: '😊', description: 'Feeling peaceful, uplifted, resilient, or joyful', color: '#059669' }
+];
+
+export const ENERGY_LEVEL_OPTIONS = [
+  { value: 'Depleted / Heavy exhaustion', label: 'Depleted / Exhausted' },
+  { value: 'Low / Sluggish energy', label: 'Low / Sluggish' },
+  { value: 'Moderate / Balanced energy', label: 'Moderate / Balanced' },
+  { value: 'Vibrant / Recharged & active', label: 'Vibrant / Energized' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' }
+];
+
+export const MENTAL_CLARITY_OPTIONS = [
+  { value: 'Racing thoughts / Overstimulated', label: 'Racing / Overstimulated' },
+  { value: 'Brain fog / Hard to concentrate', label: 'Brain fog / Sluggish' },
+  { value: 'Steady / Manageable focus', label: 'Steady / Manageable' },
+  { value: 'Clear, sharp & present', label: 'Clear & Focused' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' }
+];
+
+export const STRESS_LEVEL_OPTIONS = [
+  { value: 'Deeply calm / Grounded', label: 'Deeply calm / Grounded' },
+  { value: 'Mild tension / Manageable', label: 'Mild tension / Manageable' },
+  { value: 'Moderate / Noticeable stress', label: 'Moderate / Noticeable stress' },
+  { value: 'High alert / On edge', label: 'High alert / On edge' },
+  { value: 'Overwhelmed / Frozen or numb', label: 'Overwhelmed / Frozen' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' }
+];
+
+export const SLEEP_QUALITY_OPTIONS = [
+  { value: 'Sound, deep & restful', label: 'Sound & Restful' },
+  { value: 'Fair / Adequate rest', label: 'Fair / Adequate' },
+  { value: 'Broken / Restless or light', label: 'Broken / Restless' },
+  { value: 'Disturbed by nightmares or insomnia', label: 'Nightmares / Insomnia' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' }
+];
+
+export const SUPPORT_CONNECTION_OPTIONS = [
+  { value: 'Strongly supported by someone caring', label: 'Strongly supported' },
+  { value: 'Brief / Comforting interaction', label: 'Brief interaction' },
+  { value: 'Peaceful / Grounding solitude', label: 'Grounding solitude' },
+  { value: 'Isolated / Felt alone or misunderstood', label: 'Felt isolated / alone' },
+  { value: 'Did not feel like talking to anyone', label: 'Withdrew from others' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' }
 ];
 
 export const DAY_OVERALL_OPTIONS = [
@@ -355,30 +398,6 @@ export const DAY_OVERALL_OPTIONS = [
   { value: 'Steady / Uneventful', label: 'Steady / Uneventful' },
   { value: 'Calm / Pleasant', label: 'Calm / Pleasant' },
   { value: 'Energizing / Uplifting', label: 'Energizing / Uplifting' },
-  { value: 'Prefer not to say', label: 'Prefer not to say' }
-];
-
-export const STRESS_LEVEL_OPTIONS = [
-  { value: 'Minimal / Relaxed', label: 'Minimal / Relaxed' },
-  { value: 'Mild / Manageable', label: 'Mild / Manageable' },
-  { value: 'Moderate / Noticeable tension', label: 'Moderate / Noticeable tension' },
-  { value: 'High / Overwhelming', label: 'High / Overwhelming' },
-  { value: 'Prefer not to say', label: 'Prefer not to say' }
-];
-
-export const SLEEP_QUALITY_OPTIONS = [
-  { value: 'Sound / Restful', label: 'Sound / Restful' },
-  { value: 'Fair / Okay', label: 'Fair / Okay' },
-  { value: 'Somewhat disrupted', label: 'Somewhat disrupted' },
-  { value: 'Very poor / Restless or nightmares', label: 'Very poor / Restless or nightmares' },
-  { value: 'Prefer not to say', label: 'Prefer not to say' }
-];
-
-export const SUPPORT_CONNECTION_OPTIONS = [
-  { value: 'Yes, had someone supportive', label: 'Yes, had someone supportive' },
-  { value: 'Briefly / A little', label: 'Briefly / A little' },
-  { value: 'No, felt isolated / alone', label: 'No, felt isolated / alone' },
-  { value: 'Did not feel like talking to anyone', label: 'Did not feel like talking to anyone' },
   { value: 'Prefer not to say', label: 'Prefer not to say' }
 ];
 
@@ -441,8 +460,23 @@ export function getCurrentWeekDays(checkIns: DailyCheckIn[], refDate = new Date(
 
 export function isCheckInSupportNeeded(checkIn: Partial<DailyCheckIn>): boolean {
   if (checkIn.mood === 1) return true;
-  if (checkIn.stressLevel && checkIn.stressLevel.toLowerCase().includes('high')) return true;
-  if (checkIn.sleepQuality && checkIn.sleepQuality.toLowerCase().includes('nightmares')) return true;
+  if (checkIn.stressLevel && (
+    checkIn.stressLevel.toLowerCase().includes('high') ||
+    checkIn.stressLevel.toLowerCase().includes('edge') ||
+    checkIn.stressLevel.toLowerCase().includes('frozen') ||
+    checkIn.stressLevel.toLowerCase().includes('overwhelm')
+  )) return true;
+  if (checkIn.sleepQuality && (
+    checkIn.sleepQuality.toLowerCase().includes('nightmares') ||
+    checkIn.sleepQuality.toLowerCase().includes('insomnia') ||
+    checkIn.sleepQuality.toLowerCase().includes('disturbed')
+  )) return true;
+  if (checkIn.feltSupported && (
+    checkIn.feltSupported.toLowerCase().includes('isolated') ||
+    checkIn.feltSupported.toLowerCase().includes('alone')
+  )) return true;
+  if (checkIn.energyLevel && checkIn.energyLevel.toLowerCase().includes('depleted')) return true;
+  if (checkIn.mentalClarity && checkIn.mentalClarity.toLowerCase().includes('racing')) return true;
   return false;
 }
 
@@ -467,11 +501,13 @@ export function generateSeedCheckIns(refDate = new Date()): DailyCheckIn[] {
       displayDate: formatDisplayDate(monDate),
       timestamp: monDate.getTime() + 9 * 3600 * 1000,
       mood: 3,
-      moodLabel: 'Okay / Steady',
+      moodLabel: 'Steady / Holding On',
       dayOverall: 'Steady / Uneventful',
-      stressLevel: 'Mild / Manageable',
-      sleepQuality: 'Fair / Okay',
-      feltSupported: 'Yes, had someone supportive',
+      stressLevel: 'Mild tension / Manageable',
+      sleepQuality: 'Fair / Adequate rest',
+      feltSupported: 'Strongly supported by someone caring',
+      energyLevel: 'Moderate / Balanced energy',
+      mentalClarity: 'Steady / Manageable focus',
       notes: 'Grounded myself with quiet music in the afternoon.'
     });
   }
@@ -484,11 +520,13 @@ export function generateSeedCheckIns(refDate = new Date()): DailyCheckIn[] {
       displayDate: formatDisplayDate(tueDate),
       timestamp: tueDate.getTime() + 10 * 3600 * 1000,
       mood: 4,
-      moodLabel: 'Good',
+      moodLabel: 'Good / Grounded',
       dayOverall: 'Calm / Pleasant',
-      stressLevel: 'Mild / Manageable',
-      sleepQuality: 'Sound / Restful',
-      feltSupported: 'Yes, had someone supportive',
+      stressLevel: 'Deeply calm / Grounded',
+      sleepQuality: 'Sound, deep & restful',
+      feltSupported: 'Strongly supported by someone caring',
+      energyLevel: 'Vibrant / Recharged & active',
+      mentalClarity: 'Clear, sharp & present',
       notes: 'Felt calm and present during work.'
     });
   }
@@ -592,5 +630,99 @@ export function saveStoredHistory(list: AssessmentRecord[], userId?: string): vo
     localStorage.setItem(HISTORY_STORAGE_KEY(userId), JSON.stringify(list));
   } catch (e) {
     console.warn('Could not save history to localStorage:', e);
+  }
+}
+
+// ============================================================
+// WHO-5 WELL-BEING ASSESSMENT — QUESTIONS, OPTIONS & HELPERS
+// ============================================================
+
+/**
+ * WHO-5 Well-Being Index questions.
+ * The WHO-5 is copyright © WHO Regional Office for Europe, 1998.
+ * License required for commercial or clinical deployment.
+ * Placeholder text below uses the canonical topic descriptors from
+ * the public domain summary; replace with licensed wording when obtained.
+ */
+export const WHO5_QUESTIONS: { id: number; topic: string; placeholder: string }[] = [
+  {
+    id: 1,
+    topic: 'Cheerful mood',
+    placeholder:
+      'Over the last two weeks, I have felt cheerful and in good spirits.',
+  },
+  {
+    id: 2,
+    topic: 'Calm and relaxed',
+    placeholder:
+      'Over the last two weeks, I have felt calm and relaxed.',
+  },
+  {
+    id: 3,
+    topic: 'Active and vigorous',
+    placeholder:
+      'Over the last two weeks, I have felt active and vigorous.',
+  },
+  {
+    id: 4,
+    topic: 'Woke up fresh and rested',
+    placeholder:
+      'Over the last two weeks, I woke up feeling fresh and rested.',
+  },
+  {
+    id: 5,
+    topic: 'Daily life filled with interesting things',
+    placeholder:
+      'Over the last two weeks, my daily life has been filled with things that interest me.',
+  },
+];
+
+/**
+ * WHO-5 response options.
+ * Scores range from 0 (At no time) to 5 (All of the time).
+ */
+export const WHO5_OPTIONS: { value: number; label: string; sublabel: string }[] = [
+  { value: 0, label: 'At no time',             sublabel: '0 days' },
+  { value: 1, label: 'Some of the time',        sublabel: '1–5 days' },
+  { value: 2, label: 'Less than half the time', sublabel: '6–7 days' },
+  { value: 3, label: 'More than half the time', sublabel: '8–9 days' },
+  { value: 4, label: 'Most of the time',         sublabel: '10–13 days' },
+  { value: 5, label: 'All of the time',          sublabel: '14 days' },
+];
+
+/**
+ * Calculate WHO-5 raw score (0–25) and percentage score (0–100).
+ * rawScore = sum of 5 question values (each 0–5)
+ * percentScore = rawScore × 4
+ */
+export function calculateWho5Score(answers: (number | null)[]): { raw: number; percent: number } {
+  const raw = answers.reduce<number>((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+  return { raw, percent: raw * 4 };
+}
+
+// localStorage key for WHO-5 assessments
+const WHO5_STORAGE_KEY = (userId?: string) =>
+  `mindtrauma_who5_assessments_${userId || 'guest'}`;
+
+
+export function loadStoredWho5(userId?: string): Who5Record[] {
+  const key = WHO5_STORAGE_KEY(userId);
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as Who5Record[];
+    }
+  } catch (e) {
+    console.warn('Could not read WHO-5 data from localStorage:', e);
+  }
+  return [];
+}
+
+export function saveStoredWho5(records: Who5Record[], userId?: string): void {
+  try {
+    localStorage.setItem(WHO5_STORAGE_KEY(userId), JSON.stringify(records));
+  } catch (e) {
+    console.warn('Could not save WHO-5 data to localStorage:', e);
   }
 }

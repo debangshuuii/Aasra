@@ -114,14 +114,14 @@ Format requirements:
 6. Mandatory Clinical Disclaimer: "The PC-PTSD-5 and GAD-7 are screening tools, not diagnostic tests; a positive result warrants further evaluation by a qualified professional." Keep concise (3-4 concise sections).`;
 
     const result = await generateWithRotation(
-      ['gemini-3.1-flash-lite', 'gemini-3.5-flash'],
+      ['gemini-3.1-flash-lite', 'gemini-3.6-flash'],
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction: 'You are Saathi, an empathetic, trauma-informed clinical assistant synthesizing screening questionnaires for victims and survivors.'
         }
       },
-      25000
+      18000
     );
 
     const summary = result.text || fallbackText;

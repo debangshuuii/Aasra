@@ -246,32 +246,46 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs mb-3">
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="text-[11px] text-gray-500 block">Energy</span>
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.energyLevel ? checkIn.energyLevel.split('/')[0].trim() : 'Stable'}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="text-[11px] text-gray-500 block">Clarity</span>
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.mentalClarity ? checkIn.mentalClarity.split('/')[0].trim() : 'Steady'}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="text-[11px] text-gray-500 block">Nervous System</span>
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.stressLevel.split('/')[0].trim()}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="text-[11px] text-gray-500 block">Sleep Rest</span>
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.sleepQuality.split('/')[0].trim()}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="text-[11px] text-gray-500 block">Connection</span>
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.feltSupported.split('/')[0].trim()}
+                        </span>
+                      </div>
+
                       <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                         <span className="text-[11px] text-gray-500 block">Day Overall</span>
-                        <span className="font-semibold text-gray-900 block mt-0.5">
-                          {checkIn.dayOverall}
-                        </span>
-                      </div>
-
-                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                        <span className="text-[11px] text-gray-500 block">Stress Level</span>
-                        <span className="font-semibold text-gray-900 block mt-0.5">
-                          {checkIn.stressLevel}
-                        </span>
-                      </div>
-
-                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                        <span className="text-[11px] text-gray-500 block">Recent Sleep</span>
-                        <span className="font-semibold text-gray-900 block mt-0.5">
-                          {checkIn.sleepQuality}
-                        </span>
-                      </div>
-
-                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                        <span className="text-[11px] text-gray-500 block">Support Connection</span>
-                        <span className="font-semibold text-gray-900 block mt-0.5">
-                          {checkIn.feltSupported}
+                        <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                          {checkIn.dayOverall.split('/')[0].trim()}
                         </span>
                       </div>
                     </div>

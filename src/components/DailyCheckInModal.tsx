@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DailyCheckIn } from '../types';
 import { 
   MOOD_OPTIONS, 
+  ENERGY_LEVEL_OPTIONS,
+  MENTAL_CLARITY_OPTIONS,
   DAY_OVERALL_OPTIONS, 
   STRESS_LEVEL_OPTIONS, 
   SLEEP_QUALITY_OPTIONS, 
@@ -19,7 +21,12 @@ import {
   Bot, 
   CheckCircle2, 
   Info,
-  Calendar
+  Calendar,
+  Zap,
+  Brain,
+  Moon,
+  Users,
+  Compass
 } from 'lucide-react';
 
 interface DailyCheckInModalProps {
@@ -42,10 +49,12 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
   onOpenChat
 }) => {
   const [mood, setMood] = useState<1 | 2 | 3 | 4 | 5 | null>(3);
+  const [energyLevel, setEnergyLevel] = useState<string>('Moderate / Balanced energy');
+  const [mentalClarity, setMentalClarity] = useState<string>('Steady / Manageable focus');
+  const [stressLevel, setStressLevel] = useState<string>('Mild tension / Manageable');
+  const [sleepQuality, setSleepQuality] = useState<string>('Fair / Adequate rest');
+  const [feltSupported, setFeltSupported] = useState<string>('Strongly supported by someone caring');
   const [dayOverall, setDayOverall] = useState<string>('Steady / Uneventful');
-  const [stressLevel, setStressLevel] = useState<string>('Mild / Manageable');
-  const [sleepQuality, setSleepQuality] = useState<string>('Fair / Okay');
-  const [feltSupported, setFeltSupported] = useState<string>('Yes, had someone supportive');
   const [notes, setNotes] = useState<string>('');
   const [submitted, setSubmitted] = useState<boolean>(false);
 
@@ -55,17 +64,21 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
       setSubmitted(false);
       if (todayCheckIn) {
         setMood(todayCheckIn.mood);
-        setDayOverall(todayCheckIn.dayOverall);
+        setEnergyLevel(todayCheckIn.energyLevel || 'Moderate / Balanced energy');
+        setMentalClarity(todayCheckIn.mentalClarity || 'Steady / Manageable focus');
         setStressLevel(todayCheckIn.stressLevel);
         setSleepQuality(todayCheckIn.sleepQuality);
         setFeltSupported(todayCheckIn.feltSupported);
+        setDayOverall(todayCheckIn.dayOverall);
         setNotes(todayCheckIn.notes || '');
       } else {
         setMood(3);
+        setEnergyLevel('Moderate / Balanced energy');
+        setMentalClarity('Steady / Manageable focus');
+        setStressLevel('Mild tension / Manageable');
+        setSleepQuality('Fair / Adequate rest');
+        setFeltSupported('Strongly supported by someone caring');
         setDayOverall('Steady / Uneventful');
-        setStressLevel('Mild / Manageable');
-        setSleepQuality('Fair / Okay');
-        setFeltSupported('Yes, had someone supportive');
         setNotes('');
       }
     }
@@ -77,7 +90,7 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
   const dateKey = formatDateKey(now);
   const displayDateStr = formatDisplayDate(now);
 
-  const needsSupport = isCheckInSupportNeeded({ mood, stressLevel, sleepQuality });
+  const needsSupport = isCheckInSupportNeeded({ mood, stressLevel, sleepQuality, energyLevel, mentalClarity, feltSupported });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,10 +109,12 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
       timestamp: submitTime.getTime(),
       mood,
       moodLabel,
-      dayOverall,
+      energyLevel,
+      mentalClarity,
       stressLevel,
       sleepQuality,
       feltSupported,
+      dayOverall,
       notes: notes.trim() || undefined
     };
 
@@ -216,19 +231,20 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
               </button>
             </div>
 
-            {/* Question 2: Day Overall */}
+            {/* Question 2: Physical Energy & Vitality */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
-                2. How was your day overall?
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Zap className="w-3.5 h-3.5 text-amber-600" />
+                <span>2. Physical Energy &amp; Vitality</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {DAY_OVERALL_OPTIONS.map((opt) => {
-                  const isSelected = dayOverall === opt.value;
+                {ENERGY_LEVEL_OPTIONS.map((opt) => {
+                  const isSelected = energyLevel === opt.value;
                   return (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setDayOverall(opt.value)}
+                      onClick={() => setEnergyLevel(opt.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-teal-700 text-white border-teal-700 shadow-xs'
@@ -242,10 +258,38 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
               </div>
             </div>
 
-            {/* Question 3: Stress Level */}
+            {/* Question 3: Mental Clarity & Focus */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
-                3. How would you describe your stress level today?
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Brain className="w-3.5 h-3.5 text-sky-600" />
+                <span>3. Mental Clarity &amp; Focus</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {MENTAL_CLARITY_OPTIONS.map((opt) => {
+                  const isSelected = mentalClarity === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setMentalClarity(opt.value)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-teal-700 text-white border-teal-700 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question 4: Nervous System & Stress Level */}
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Wind className="w-3.5 h-3.5 text-teal-600" />
+                <span>4. Nervous System &amp; Stress State</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {STRESS_LEVEL_OPTIONS.map((opt) => {
@@ -268,10 +312,11 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
               </div>
             </div>
 
-            {/* Question 4: Sleep Quality */}
+            {/* Question 5: Sleep & Nighttime Rest */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
-                4. How well did you sleep recently?
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                <span>5. Sleep &amp; Restorative Rest</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {SLEEP_QUALITY_OPTIONS.map((opt) => {
@@ -294,10 +339,11 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
               </div>
             </div>
 
-            {/* Question 5: Comfort Talking to Someone */}
+            {/* Question 6: Social Connection & Support */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
-                5. Did you have someone you felt comfortable talking to today?
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Users className="w-3.5 h-3.5 text-purple-600" />
+                <span>6. Emotional Support &amp; Connection</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {SUPPORT_CONNECTION_OPTIONS.map((opt) => {
@@ -307,6 +353,33 @@ export const DailyCheckInModal: React.FC<DailyCheckInModalProps> = ({
                       key={opt.value}
                       type="button"
                       onClick={() => setFeltSupported(opt.value)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-teal-700 text-white border-teal-700 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question 7: Day Overall */}
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider font-display">
+                <Compass className="w-3.5 h-3.5 text-slate-600" />
+                <span>7. Overall Day Rhythm</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {DAY_OVERALL_OPTIONS.map((opt) => {
+                  const isSelected = dayOverall === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDayOverall(opt.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-teal-700 text-white border-teal-700 shadow-xs'

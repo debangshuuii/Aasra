@@ -24,15 +24,18 @@ function getClinicalFallbackResponse(message: string): string {
 Take a slow, deep breath in, and let your shoulders drop as you exhale.`;
   }
 
-  // General compassionate fallback
+  // General compassionate fallback — rotated by time to avoid repetition
   const fallbacks = [
     `Thank you for sharing that with me. Experiencing trauma reactions can feel overwhelming and isolating, but these responses are normal physiological adaptations to severe stress. What aspect of what you're feeling would be most supportive to focus on right now—understanding symptoms, practical grounding exercises, or next steps with a healthcare provider?`,
     `I hear you, and what you're describing is deeply valid. Healing from traumatic stress is not linear, and giving voice to these feelings is a courageous step. Would you like to explore how your body is feeling in this moment, or would you prefer information on coping strategies?`,
-    `Thank you for opening up about this. Trauma can impact how safe we feel in our bodies and in our environments. Remember that you do not have to carry this all alone. We can take this one step at a time—would a calming breathing exercise or learning about symptom patterns feel more helpful right now?`
+    `Thank you for opening up about this. Trauma can impact how safe we feel in our bodies and in our environments. Remember that you do not have to carry this all alone. We can take this one step at a time—would a calming breathing exercise or learning about symptom patterns feel more helpful right now?`,
+    `What you're sharing takes real courage. The nervous system's response to overwhelming stress—whether it shows up as tension, exhaustion, or emotional numbness—is your body's protective intelligence at work. Would it help to talk through what you're noticing, or would you prefer some grounding support right now?`,
+    `I'm here with you in this moment. Difficult feelings don't follow a set schedule, and there's no "right" way to process what you've been through. Would you like to explore what trauma-informed support looks like for your specific experience, or would a simple calming technique help first?`
   ];
 
-  const hash = Math.abs(message.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-  return fallbacks[hash % fallbacks.length];
+  const timeSlot = Math.floor(Date.now() / 30000);
+  const msgHash = Math.abs(message.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
+  return fallbacks[(timeSlot + msgHash) % fallbacks.length];
 }
 
 export default async function handler(req: any, res: any) {
@@ -74,7 +77,8 @@ You provide supportive information, explain PTSD symptoms according to DSM-5 (In
 CLINICAL BOUNDARIES & SAFETY PROTOCOLS:
 1. You are NOT a doctor, therapist, or emergency service. Never diagnose.
 2. If the user expresses thoughts of suicide, self-harm, severe crisis, or immediate danger, lead immediately with Indian Crisis Helplines: Tele-MANAS (14416 / 1800-891-4416), KIRAN (1800-599-0019), Vandrevala Foundation (+91 9999 666 555), and National Emergency (112).
-3. Keep responses warm, non-judgmental, validating, gentle, concise (2-3 short paragraphs maximum), and easily readable.`;
+3. Keep responses warm, non-judgmental, validating, gentle, concise (2-3 short paragraphs maximum), and easily readable.
+4. IMPORTANT: Never repeat a response you have already given in this conversation. Read the conversation history carefully and build upon what has been shared. Vary your language and approach with each response. Acknowledge what the user just said specifically before continuing.`;
 
     // Build conversation contents ensuring clean alternation (user -> model -> user)
     const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
@@ -98,23 +102,17 @@ CLINICAL BOUNDARIES & SAFETY PROTOCOLS:
       }
     }
 
+    // Always append the new user message — bridge with model turn if history ends on 'user'
     if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
-      if (contents[contents.length - 1].parts[0].text.trim() !== message.trim()) {
-        contents.push({
-          role: 'model',
-          parts: [{ text: 'I am here with you. Please go on.' }]
-        });
-        contents.push({
-          role: 'user',
-          parts: [{ text: message.trim() }]
-        });
-      }
-    } else {
       contents.push({
-        role: 'user',
-        parts: [{ text: message.trim() }]
+        role: 'model',
+        parts: [{ text: 'I understand. Please continue.' }]
       });
     }
+    contents.push({
+      role: 'user',
+      parts: [{ text: message.trim() }]
+    });
 
     if (contents.length > 0 && contents[0].role === 'model') {
       contents.unshift({
@@ -124,14 +122,14 @@ CLINICAL BOUNDARIES & SAFETY PROTOCOLS:
     }
 
     const result = await generateWithRotation(
-      ['gemini-3.1-flash-lite', 'gemini-3.5-flash'],
+      ['gemini-3.1-flash-lite', 'gemini-3.6-flash'],
       {
         contents,
         config: {
           systemInstruction,
         }
       },
-      12000
+      18000
     );
 
     const replyText = result.text || getClinicalFallbackResponse(message);

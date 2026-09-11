@@ -1,5 +1,5 @@
 import React from 'react';
-import { ViewId, DailyCheckIn, AssessmentRecord } from '../types';
+import { ViewId, DailyCheckIn, AssessmentRecord, Who5Record, Who5TrendPoint } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { 
   getCurrentWeekDays, 
@@ -9,6 +9,7 @@ import {
   isCheckInSupportNeeded 
 } from '../data/screeningData';
 import { WeeklyMoodGraph } from '../components/WeeklyMoodGraph';
+import { Who5TrendGraph } from '../components/Who5TrendGraph';
 import { 
   PlusCircle, 
   History, 
@@ -24,7 +25,9 @@ import {
   Heart,
   Edit3,
   Clock,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  ClipboardCheck
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -35,6 +38,7 @@ interface DashboardViewProps {
   onOpenGrounding?: () => void;
   onOpenCrisis?: () => void;
   historyList?: AssessmentRecord[];
+  who5Records?: Who5Record[];
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
@@ -44,7 +48,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenPreviousCheckIns,
   onOpenGrounding,
   onOpenCrisis,
-  historyList
+  historyList,
+  who5Records = [],
 }) => {
   const { user, displayName } = useAuth();
   const latestAssessment = historyList && historyList.length > 0 ? historyList[0] : undefined;
@@ -94,7 +99,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-950 font-display">
             {user
-              ? `Welcome back, ${displayName || user.email?.split('@')[0] || 'Patient'}`
+              ? `Welcome back, ${displayName || user.email?.split('@')[0] || 'User'}`
               : 'Welcome to Aasra'}
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
@@ -309,6 +314,78 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── WHO-5 Well-Being Assessment Card ────────────────────────────────── */}
+      <div className="bg-white p-6 sm:p-7 rounded-3xl border border-violet-200/80 shadow-2xs mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-violet-700 font-bold uppercase tracking-wider font-display flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
+                Validated Assessment
+              </span>
+              <span className="text-gray-300">•</span>
+              <span className="text-xs px-2 py-0.5 bg-violet-50 text-violet-700 rounded-full border border-violet-200 font-medium">
+                Score 0–100
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-950 font-display">
+              WHO-5 Well-Being
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+              Periodic validated assessment. Higher score = higher reported well-being.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {(() => {
+              const latestWho5 = who5Records.length > 0
+                ? [...who5Records].sort((a, b) => b.timestamp - a.timestamp)[0]
+                : null;
+              return latestWho5 ? (
+                <span className="px-3 py-1.5 rounded-xl bg-violet-50 border border-violet-200/80 text-xs font-semibold text-violet-900 flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-violet-700" />
+                  <span>Last: {latestWho5.percentScore}/100 · {latestWho5.date}</span>
+                </span>
+              ) : null;
+            })()}
+            <button
+              type="button"
+              id="btn-start-who5-dashboard"
+              onClick={() => onNavigate('wellbeing')}
+              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              <span>Start WHO-5 Assessment</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Compact WHO-5 trend graph */}
+        <Who5TrendGraph
+          points={[...who5Records]
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .slice(-8)
+            .map(r => ({
+              label: new Date(r.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              dateStr: r.dateKey,
+              score: r.percentScore,
+            }))}
+          compact={true}
+          onStartAssessment={() => onNavigate('wellbeing')}
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5 pt-4 border-t border-gray-100 text-xs">
+          <div className="bg-violet-50/60 p-3 rounded-xl border border-violet-100 flex items-center justify-between">
+            <span className="text-gray-500">Assessments Completed</span>
+            <span className="font-bold text-violet-900 font-display">{who5Records.length}</span>
+          </div>
+          <div className="bg-violet-50/60 p-3 rounded-xl border border-violet-100 flex items-center justify-between">
+            <span className="text-gray-500">Assessment Type</span>
+            <span className="font-medium text-violet-700">WHO-5 · Validated (Not Diagnostic)</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Content 2-Column Grid */}

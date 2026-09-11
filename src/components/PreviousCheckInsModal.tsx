@@ -93,32 +93,46 @@ export const PreviousCheckInsModal: React.FC<PreviousCheckInsModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs mb-3">
+                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="text-[11px] text-gray-500 block">Energy</span>
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.energyLevel ? rec.energyLevel.split('/')[0].trim() : 'Stable'}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="text-[11px] text-gray-500 block">Clarity</span>
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.mentalClarity ? rec.mentalClarity.split('/')[0].trim() : 'Steady'}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="text-[11px] text-gray-500 block">Nervous System</span>
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.stressLevel.split('/')[0].trim()}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="text-[11px] text-gray-500 block">Sleep Rest</span>
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.sleepQuality.split('/')[0].trim()}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="text-[11px] text-gray-500 block">Connection</span>
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.feltSupported.split('/')[0].trim()}
+                      </span>
+                    </div>
+
                     <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                       <span className="text-[11px] text-gray-500 block">Day Overall</span>
-                      <span className="font-semibold text-gray-900 block mt-0.5">
-                        {rec.dayOverall}
-                      </span>
-                    </div>
-
-                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[11px] text-gray-500 block">Stress Level</span>
-                      <span className="font-semibold text-gray-900 block mt-0.5">
-                        {rec.stressLevel}
-                      </span>
-                    </div>
-
-                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[11px] text-gray-500 block">Recent Sleep</span>
-                      <span className="font-semibold text-gray-900 block mt-0.5">
-                        {rec.sleepQuality}
-                      </span>
-                    </div>
-
-                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[11px] text-gray-500 block">Support Connection</span>
-                      <span className="font-semibold text-gray-900 block mt-0.5">
-                        {rec.feltSupported}
+                      <span className="font-semibold text-gray-900 block mt-0.5 truncate">
+                        {rec.dayOverall.split('/')[0].trim()}
                       </span>
                     </div>
                   </div>

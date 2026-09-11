@@ -351,14 +351,14 @@ export const WeeklyMoodGraph: React.FC<WeeklyMoodGraphProps> = ({ days, onOpenCh
           </div>
 
           {selectedDay.checkIn ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
               <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                <span className="text-[11px] text-gray-500 block">Mood Today</span>
-                <span className="font-bold text-gray-900 text-sm flex items-center gap-1 mt-0.5">
+                <span className="text-[11px] text-gray-500 block">Mood</span>
+                <span className="font-bold text-gray-900 text-xs flex items-center gap-1 mt-0.5">
                   {selectedDay.checkIn.mood !== null ? (
                     <>
                       <span>{MOOD_OPTIONS.find(m => m.score === selectedDay.checkIn?.mood)?.emoji}</span>
-                      <span>{selectedDay.checkIn.moodLabel}</span>
+                      <span className="truncate">{selectedDay.checkIn.moodLabel.split('/')[0].trim()}</span>
                     </>
                   ) : (
                     <span className="text-gray-500 font-normal">Prefer not to say</span>
@@ -367,28 +367,42 @@ export const WeeklyMoodGraph: React.FC<WeeklyMoodGraphProps> = ({ days, onOpenCh
               </div>
 
               <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                <span className="text-[11px] text-gray-500 block">Stress Level</span>
+                <span className="text-[11px] text-gray-500 block">Energy</span>
+                <span className="font-semibold text-gray-900 block mt-0.5 truncate" title={selectedDay.checkIn.energyLevel || 'Not recorded'}>
+                  {selectedDay.checkIn.energyLevel ? selectedDay.checkIn.energyLevel.split('/')[0].trim() : 'Stable'}
+                </span>
+              </div>
+
+              <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                <span className="text-[11px] text-gray-500 block">Mental Clarity</span>
+                <span className="font-semibold text-gray-900 block mt-0.5 truncate" title={selectedDay.checkIn.mentalClarity || 'Not recorded'}>
+                  {selectedDay.checkIn.mentalClarity ? selectedDay.checkIn.mentalClarity.split('/')[0].trim() : 'Steady'}
+                </span>
+              </div>
+
+              <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                <span className="text-[11px] text-gray-500 block">Nervous System</span>
                 <span className="font-semibold text-gray-900 block mt-0.5 truncate" title={selectedDay.checkIn.stressLevel}>
-                  {selectedDay.checkIn.stressLevel}
+                  {selectedDay.checkIn.stressLevel.split('/')[0].trim()}
                 </span>
               </div>
 
               <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                <span className="text-[11px] text-gray-500 block">Recent Sleep</span>
+                <span className="text-[11px] text-gray-500 block">Sleep Rest</span>
                 <span className="font-semibold text-gray-900 block mt-0.5 truncate" title={selectedDay.checkIn.sleepQuality}>
-                  {selectedDay.checkIn.sleepQuality}
+                  {selectedDay.checkIn.sleepQuality.split('/')[0].trim()}
                 </span>
               </div>
 
               <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                <span className="text-[11px] text-gray-500 block">Felt Supported</span>
+                <span className="text-[11px] text-gray-500 block">Connection</span>
                 <span className="font-semibold text-gray-900 block mt-0.5 truncate" title={selectedDay.checkIn.feltSupported}>
-                  {selectedDay.checkIn.feltSupported}
+                  {selectedDay.checkIn.feltSupported.split('/')[0].trim()}
                 </span>
               </div>
 
               {selectedDay.checkIn.notes && (
-                <div className="col-span-2 sm:col-span-4 bg-teal-50/60 p-2.5 rounded-xl border border-teal-100 text-xs text-teal-950">
+                <div className="col-span-2 sm:col-span-3 lg:col-span-6 bg-teal-50/60 p-2.5 rounded-xl border border-teal-100 text-xs text-teal-950">
                   <span className="font-bold text-teal-800 mr-1">Reflection:</span>
                   <span className="italic">{selectedDay.checkIn.notes}</span>
                 </div>

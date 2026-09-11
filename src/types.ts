@@ -10,7 +10,8 @@ export type ViewId =
   | 'resources'
   | 'dashboard'
   | 'history'
-  | 'states';
+  | 'states'
+  | 'wellbeing';
 
 export interface Question {
   id: number;
@@ -129,6 +130,8 @@ export interface DailyCheckIn {
   stressLevel: string;
   sleepQuality: string;
   feltSupported: string;
+  energyLevel?: string;
+  mentalClarity?: string;
   notes?: string;
 }
 
@@ -140,4 +143,24 @@ export interface WeeklyTrendDay {
   isToday: boolean;
   isFuture: boolean;
   checkIn?: DailyCheckIn;
+}
+
+// ============================================================
+// WHO-5 Well-Being Assessment Types
+// ============================================================
+
+export interface Who5Record {
+  id: string;
+  date: string;           // Formatted display date e.g. 'Sep 11, 2026'
+  dateKey: string;        // ISO date key 'YYYY-MM-DD'
+  timestamp: number;      // epoch ms
+  rawScore: number;       // 0–25 (sum of 5 question scores)
+  percentScore: number;   // 0–100 (rawScore × 4)
+  answers: number[];      // Array of 5 values (0–5 each)
+}
+
+export interface Who5TrendPoint {
+  label: string;          // Short display label e.g. 'Sep 11'
+  dateStr: string;        // 'YYYY-MM-DD'
+  score: number;          // 0–100 WHO-5 percentage score
 }

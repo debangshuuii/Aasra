@@ -8,7 +8,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { signInWithGoogle, signInWithMagicLink } = useAuth();
+  const { user, displayName, signInWithGoogle, signInWithMagicLink } = useAuth();
   const [email, setEmail] = useState('');
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -23,11 +23,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        setErrorMessage(error.message || 'Failed to sign in with Google. Please check your connection.');
+        // Give a user-friendly message for common OAuth redirect errors
+        const msg = error.message || '';
+        if (
+          msg.toLowerCase().includes('redirect') ||
+          msg.toLowerCase().includes('provider') ||
+          msg.toLowerCase().includes('oauth') ||
+          msg.toLowerCase().includes('origin')
+        ) {
+          setErrorMessage(
+            'Google sign-in could not be completed. If you are on localhost, please ensure this URL is added as an Authorized Redirect URI in your Supabase project and Google Cloud Console. Alternatively, use the email magic link below.'
+          );
+        } else {
+          setErrorMessage(msg || 'Failed to sign in with Google. Please try the magic link option below.');
+        }
         setIsGoogleLoading(false);
       }
+      // If no error, Google will redirect — keep loading spinner
     } catch (err: any) {
-      setErrorMessage(err?.message || 'An unexpected error occurred.');
+      setErrorMessage(err?.message || 'An unexpected error occurred. Please try again.');
       setIsGoogleLoading(false);
     }
   };
@@ -80,10 +94,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Sparkles className="w-6 h-6" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-950 tracking-tight font-display">
-            Aasra Patient Portal
+            {user ? `Welcome back, ${displayName || user.email?.split('@')[0] || 'User'}` : 'Welcome to Aasra'}
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-xs mx-auto">
-            Sign in securely to preserve your trauma screenings, track daily moods, and protect your recovery journey.
+            {user
+              ? 'Your account is securely linked. All screenings and daily check-ins sync automatically.'
+              : 'Sign in securely to preserve your trauma screenings, track daily moods, and protect your recovery journey.'}
           </p>
         </div>
 
@@ -198,8 +214,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </form>
         )}
 
+        {/* Guest Session Bypass Option */}
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-gray-200 shadow-2xs"
+          >
+            <ShieldCheck className="w-4 h-4 text-gray-500" />
+            <span>Continue as Guest (Private In-Browser Mode)</span>
+          </button>
+        </div>
+
         {/* Medical Privacy & Confidentiality Guarantee */}
-        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2.5 text-[11px] text-gray-500">
+        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2.5 text-[11px] text-gray-500">
           <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
           <span>
             Strict clinical confidentiality: Your assessments and PIN-locked records are isolated with Row Level Security.

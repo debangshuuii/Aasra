@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ViewId, AssessmentCompositeResult, AssessmentRecord, DailyCheckIn } from './types';
+import { ViewId, AssessmentCompositeResult, AssessmentRecord, DailyCheckIn, Who5Record } from './types';
 import { 
   calculatePcPtsd5Score, 
   calculateGad7Score, 
@@ -10,6 +10,8 @@ import {
   saveStoredCheckIns,
   loadStoredHistory,
   saveStoredHistory,
+  loadStoredWho5,
+  saveStoredWho5,
   formatDateKey,
   formatDisplayDate
 } from './data/screeningData';
@@ -37,6 +39,7 @@ import { ResourcesView } from './views/ResourcesView';
 import { DashboardView } from './views/DashboardView';
 import { HistoryView } from './views/HistoryView';
 import { StatesView } from './views/StatesView';
+import { WellbeingView } from './views/WellbeingView';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewId>('landing');
@@ -60,6 +63,9 @@ export default function App() {
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState<boolean>(false);
   const [isPreviousCheckInsModalOpen, setIsPreviousCheckInsModalOpen] = useState<boolean>(false);
 
+  // WHO-5 Well-Being Assessment Records (persisted locally)
+  const [who5Records, setWho5Records] = useState<Who5Record[]>(() => loadStoredWho5());
+
   const { user } = useAuth();
 
   // Switch to the user-scoped localStorage store and load Supabase data when user changes
@@ -69,8 +75,10 @@ export default function App() {
     // Load the correct scoped local data for this user (or guest)
     const localHistory = loadStoredHistory(userId);
     const localCheckIns = loadStoredCheckIns(userId);
+    const localWho5 = loadStoredWho5(userId);
     setHistoryList(localHistory);
     setCheckIns(localCheckIns);
+    setWho5Records(localWho5);
 
     if (!userId) return;
 
@@ -159,6 +167,28 @@ export default function App() {
         notes: newCheckIn.notes,
       }).then(({ error }) => {
         if (error) console.warn('[App] Supabase check-in sync error:', error.message);
+      });
+    }
+  };
+
+  const handleSaveWho5 = (newRecord: Who5Record) => {
+    const userId = user?.id;
+    setWho5Records(prev => {
+      const updated = [newRecord, ...prev];
+      saveStoredWho5(updated, userId);
+      return updated;
+    });
+
+    // Optional Supabase sync (table must exist — see supabase_schema.sql)
+    if (userId) {
+      supabase.from('who5_assessments').insert({
+        user_id: userId,
+        raw_score: newRecord.rawScore,
+        percent_score: newRecord.percentScore,
+        answers: newRecord.answers,
+        assessment_date: newRecord.dateKey,
+      }).then(({ error }) => {
+        if (error) console.warn('[App] Supabase WHO-5 sync error (table may not exist yet):', error.message);
       });
     }
   };
@@ -431,6 +461,7 @@ export default function App() {
               onOpenGrounding={() => setIsGroundingModalOpen(true)}
               onOpenCrisis={() => setIsCrisisModalOpen(true)}
               historyList={historyList}
+              who5Records={who5Records}
             />
           )}
 
@@ -451,6 +482,18 @@ export default function App() {
           {currentView === 'states' && (
             <StatesView
               onNavigate={handleNavigate}
+              onOpenCrisis={() => setIsCrisisModalOpen(true)}
+            />
+          )}
+
+          {currentView === 'wellbeing' && (
+            <WellbeingView
+              onNavigate={handleNavigate}
+              who5Records={who5Records}
+              onSaveWho5={handleSaveWho5}
+              checkIns={checkIns}
+              onOpenCheckIn={() => setIsCheckInModalOpen(true)}
+              onOpenPreviousCheckIns={() => setIsPreviousCheckInsModalOpen(true)}
               onOpenCrisis={() => setIsCrisisModalOpen(true)}
             />
           )}

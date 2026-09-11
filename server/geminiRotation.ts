@@ -23,7 +23,7 @@ let activeKeyIndex = 0;
 /**
  * Timeout wrapper for Gemini model call.
  */
-async function callWithTimeout<T>(promise: Promise<T>, timeoutMs = 20000): Promise<T> {
+async function callWithTimeout<T>(promise: Promise<T>, timeoutMs = 12000): Promise<T> {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
@@ -81,11 +81,20 @@ export async function generateWithRotation(
           errMsg.includes('Quota exceeded') ||
           errMsg.includes('rate limit');
 
+        const isModelUnavailable =
+          errMsg.includes('404') ||
+          errMsg.includes('no longer') ||
+          errMsg.includes('deprecated') ||
+          errMsg.includes('not found for API');
+
         if (isQuotaOrRateLimit) {
           console.warn(
             `[Gemini Rotation] Key index ${keyIndex} hit quota/rate-limit with model ${model}. Failing over to next key...`
           );
           break; // Break model loop, proceed to next key in pool
+        } else if (isModelUnavailable) {
+          console.warn(`[Gemini Rotation] Model ${model} is deprecated/unavailable, skipping immediately.`);
+          // Continue to next model without retrying with other keys
         } else {
           console.warn(
             `[Gemini Rotation] Model ${model} on key index ${keyIndex} encountered error: ${errMsg}. Trying alternate model/key...`
