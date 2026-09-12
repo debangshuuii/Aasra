@@ -427,7 +427,10 @@ export function getMondayOfWeek(d: Date): Date {
   return date;
 }
 
-export function getCurrentWeekDays(checkIns: DailyCheckIn[], refDate = new Date()): WeeklyTrendDay[] {
+export function getCurrentWeekDays(
+  items: (DailyCheckIn | Who5Record)[] = [], 
+  refDate = new Date()
+): WeeklyTrendDay[] {
   const monday = getMondayOfWeek(refDate);
   const todayKey = formatDateKey(refDate);
   const days: WeeklyTrendDay[] = [];
@@ -442,7 +445,15 @@ export function getCurrentWeekDays(checkIns: DailyCheckIn[], refDate = new Date(
     const dateStr = formatDateKey(current);
     const isToday = dateStr === todayKey;
     const isFuture = dateStr > todayKey;
-    const checkIn = checkIns.find(c => c.date === dateStr);
+
+    // Find latest matching WHO-5 record for this date
+    const matchingWho5 = (items as Who5Record[])
+      .filter(item => item && 'percentScore' in item && item.dateKey === dateStr)
+      .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+    // Find legacy check-in if present
+    const checkIn = (items as DailyCheckIn[])
+      .find(item => item && 'date' in item && item.date === dateStr);
 
     days.push({
       dayName: shortNames[i],
@@ -451,11 +462,16 @@ export function getCurrentWeekDays(checkIns: DailyCheckIn[], refDate = new Date(
       dayOfMonth: current.getDate(),
       isToday,
       isFuture,
-      checkIn
+      checkIn,
+      who5Record: matchingWho5
     });
   }
 
   return days;
+}
+
+export function getWeeklyWho5Days(who5Records: Who5Record[] = [], refDate = new Date()): WeeklyTrendDay[] {
+  return getCurrentWeekDays(who5Records, refDate);
 }
 
 export function isCheckInSupportNeeded(checkIn: Partial<DailyCheckIn>): boolean {

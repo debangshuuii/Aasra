@@ -143,6 +143,7 @@ export interface WeeklyTrendDay {
   isToday: boolean;
   isFuture: boolean;
   checkIn?: DailyCheckIn;
+  who5Record?: Who5Record;
 }
 
 // ============================================================

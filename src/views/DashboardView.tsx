@@ -1,15 +1,11 @@
 import React from 'react';
-import { ViewId, DailyCheckIn, AssessmentRecord, Who5Record, Who5TrendPoint } from '../types';
+import { ViewId, AssessmentRecord, Who5Record } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { 
   getCurrentWeekDays, 
-  formatDateKey, 
-  formatDisplayDate, 
-  MOOD_OPTIONS, 
-  isCheckInSupportNeeded 
+  formatDateKey 
 } from '../data/screeningData';
 import { WeeklyMoodGraph } from '../components/WeeklyMoodGraph';
-import { Who5TrendGraph } from '../components/Who5TrendGraph';
 import { 
   PlusCircle, 
   History, 
@@ -21,61 +17,68 @@ import {
   ShieldCheck, 
   PhoneCall,
   Activity,
-  Calendar,
   Heart,
   Edit3,
-  Clock,
   Sparkles,
-  TrendingUp,
-  ClipboardCheck
+  TrendingUp
 } from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate: (view: ViewId) => void;
-  checkIns: DailyCheckIn[];
-  onOpenCheckIn: () => void;
-  onOpenPreviousCheckIns: () => void;
   onOpenGrounding?: () => void;
   onOpenCrisis?: () => void;
   historyList?: AssessmentRecord[];
   who5Records?: Who5Record[];
+  onStartAssessment?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
   onNavigate,
-  checkIns,
-  onOpenCheckIn,
-  onOpenPreviousCheckIns,
   onOpenGrounding,
   onOpenCrisis,
   historyList,
   who5Records = [],
+  onStartAssessment
 }) => {
   const { user, displayName } = useAuth();
   const latestAssessment = historyList && historyList.length > 0 ? historyList[0] : undefined;
   const todayKey = formatDateKey(new Date());
-  const todayCheckIn = checkIns.find(c => c.date === todayKey);
-  const weeklyDays = getCurrentWeekDays(checkIns, new Date());
 
-  // Compute weekly statistics
-  const recordedWeeklyDays = weeklyDays.filter(d => d.checkIn);
+  // Weekly trend days generated ONLY from WHO-5 assessment records
+  const weeklyDays = getCurrentWeekDays(who5Records, new Date());
+  const todayRecord = who5Records
+    .filter(r => r.dateKey === todayKey)
+    .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+  // Compute weekly statistics strictly from WHO-5 records
+  const recordedWeeklyDays = weeklyDays.filter(d => d.who5Record);
   const numericScores = recordedWeeklyDays
-    .map(d => d.checkIn?.mood)
-    .filter((m): m is 1 | 2 | 3 | 4 | 5 => typeof m === 'number');
+    .map(d => d.who5Record?.percentScore)
+    .filter((s): s is number => typeof s === 'number');
 
-  const avgMoodScore = numericScores.length > 0 
-    ? (numericScores.reduce((a, b) => a + b, 0) / numericScores.length).toFixed(1)
+  const avgScore = numericScores.length > 0 
+    ? (numericScores.reduce((a, b) => a + b, 0) / numericScores.length).toFixed(0)
     : null;
 
-  const latestCheckIn = checkIns.length > 0 
-    ? [...checkIns].sort((a, b) => b.timestamp - a.timestamp)[0] 
+  const latestWho5 = who5Records.length > 0 
+    ? [...who5Records].sort((a, b) => b.timestamp - a.timestamp)[0] 
     : undefined;
 
-  const latestNeedsSupport = latestCheckIn ? isCheckInSupportNeeded(latestCheckIn) : false;
+  // Distress indicator: WHO-5 score below clinical cutoff 50 indicates elevated distress
+  const latestNeedsSupport = latestWho5 ? latestWho5.percentScore < 50 : false;
 
   const firstDay = weeklyDays[0];
   const lastDay = weeklyDays[6];
   const weekSpanText = `${firstDay.dayName}, ${firstDay.dateStr} – ${lastDay.dayName}, ${lastDay.dateStr}`;
+
+  const handleStartCheck = () => {
+    if (onStartAssessment) {
+      onStartAssessment();
+    } else {
+      onNavigate('wellbeing');
+    }
+  };
+
   return (
     <div className="flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Welcome Top Banner */}
@@ -104,22 +107,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
             {user
-              ? 'Your clinical screener records, mood check-ins, and coping tools are secured to your account.'
+              ? 'Your clinical screener records, daily well-being check-ins, and coping tools are secured to your account.'
               : 'Your clinical screener records and coping tools are stored locally on your device with strict confidentiality.'}
           </p>
         </div>
 
-
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => onNavigate('intro')}
-            className="px-4 py-2.5 rounded-xl bg-black text-white text-xs sm:text-sm font-semibold shadow-sm hover:bg-gray-800 transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>New Screener</span>
-          </button>
-
           <button
             type="button"
             onClick={() => onNavigate('chat')}
@@ -194,7 +187,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Weekly Mood Trend Section */}
+      {/* Weekly Well-Being & Mood Trend Section (Single unified graph source) */}
       <div className="bg-white p-6 sm:p-7 rounded-3xl border border-gray-200 shadow-2xs mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
           <div>
@@ -209,23 +202,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-950 font-display">
-              Weekly Mood &amp; Wellbeing Trend
+              Weekly Well-Being &amp; Mood Trend
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
-              Daily check-ins tracking your emotional states throughout the current week. Missing days are unrecorded without guesswork.
+              Daily validated check-ins tracking your emotional well-being throughout the current week. Missing days are unrecorded without guesswork.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {todayCheckIn ? (
+            {todayRecord ? (
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200/80 text-xs font-semibold text-teal-900 flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-teal-700" />
-                  <span>Logged Today ({todayCheckIn.mood !== null ? `${todayCheckIn.mood}/5` : 'Recorded'})</span>
+                  <span>Logged Today ({todayRecord.percentScore}/100)</span>
                 </span>
                 <button
                   type="button"
-                  onClick={onOpenCheckIn}
+                  onClick={handleStartCheck}
                   className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                   title="Update today's responses"
                 >
@@ -236,27 +229,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ) : (
               <button
                 type="button"
-                onClick={onOpenCheckIn}
+                id="btn-start-daily-check-dashboard"
+                onClick={handleStartCheck}
                 className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Daily Check-in</span>
+                <span>Daily Well-Being Check</span>
               </button>
             )}
 
             <button
               type="button"
-              onClick={onOpenPreviousCheckIns}
+              onClick={() => onNavigate('wellbeing')}
               className="px-3.5 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
-              <History className="w-3.5 h-3.5 text-gray-500" />
-              <span>History</span>
+              <TrendingUp className="w-3.5 h-3.5 text-gray-500" />
+              <span>All Trends</span>
             </button>
           </div>
         </div>
 
-        {/* Weekly Mood SVG Graph */}
-        <WeeklyMoodGraph days={weeklyDays} onOpenCheckIn={onOpenCheckIn} />
+        {/* Weekly Mood SVG Graph (Driven exclusively by completed assessment results) */}
+        <WeeklyMoodGraph who5Records={who5Records} days={weeklyDays} onStartAssessment={handleStartCheck} />
 
         {/* Weekly Summary Highlights Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-gray-100 text-xs">
@@ -268,16 +262,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 flex items-center justify-between">
-            <span className="text-gray-500">Average Mood (1–5)</span>
+            <span className="text-gray-500">Average Well-Being</span>
             <span className="font-bold text-teal-800 font-display">
-              {avgMoodScore ? `${avgMoodScore} / 5` : 'No scores yet'}
+              {avgScore ? `${avgScore} / 100` : 'No scores yet'}
             </span>
           </div>
 
           <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 flex items-center justify-between">
-            <span className="text-gray-500">Clinical Evaluation</span>
+            <span className="text-gray-500">Assessment Standard</span>
             <span className="font-medium text-gray-600">
-              Non-Diagnostic Tracker
+              Validated (Non-Diagnostic)
             </span>
           </div>
         </div>
@@ -288,7 +282,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-2.5 text-amber-950">
               <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
               <span>
-                Your recent check-in indicated noticeable stress or heavy feelings. Be gentle with your body today.
+                Your recent check-in indicated lower well-being or noticeable stress. Be gentle with your body today.
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -314,78 +308,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* ── WHO-5 Well-Being Assessment Card ────────────────────────────────── */}
-      <div className="bg-white p-6 sm:p-7 rounded-3xl border border-violet-200/80 shadow-2xs mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-violet-700 font-bold uppercase tracking-wider font-display flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
-                Validated Assessment
-              </span>
-              <span className="text-gray-300">•</span>
-              <span className="text-xs px-2 py-0.5 bg-violet-50 text-violet-700 rounded-full border border-violet-200 font-medium">
-                Score 0–100
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-950 font-display">
-              WHO-5 Well-Being
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
-              Periodic validated assessment. Higher score = higher reported well-being.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {(() => {
-              const latestWho5 = who5Records.length > 0
-                ? [...who5Records].sort((a, b) => b.timestamp - a.timestamp)[0]
-                : null;
-              return latestWho5 ? (
-                <span className="px-3 py-1.5 rounded-xl bg-violet-50 border border-violet-200/80 text-xs font-semibold text-violet-900 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-violet-700" />
-                  <span>Last: {latestWho5.percentScore}/100 · {latestWho5.date}</span>
-                </span>
-              ) : null;
-            })()}
-            <button
-              type="button"
-              id="btn-start-who5-dashboard"
-              onClick={() => onNavigate('wellbeing')}
-              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <ClipboardCheck className="w-4 h-4" />
-              <span>Start WHO-5 Assessment</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Compact WHO-5 trend graph */}
-        <Who5TrendGraph
-          points={[...who5Records]
-            .sort((a, b) => a.timestamp - b.timestamp)
-            .slice(-8)
-            .map(r => ({
-              label: new Date(r.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              dateStr: r.dateKey,
-              score: r.percentScore,
-            }))}
-          compact={true}
-          onStartAssessment={() => onNavigate('wellbeing')}
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5 pt-4 border-t border-gray-100 text-xs">
-          <div className="bg-violet-50/60 p-3 rounded-xl border border-violet-100 flex items-center justify-between">
-            <span className="text-gray-500">Assessments Completed</span>
-            <span className="font-bold text-violet-900 font-display">{who5Records.length}</span>
-          </div>
-          <div className="bg-violet-50/60 p-3 rounded-xl border border-violet-100 flex items-center justify-between">
-            <span className="text-gray-500">Assessment Type</span>
-            <span className="font-medium text-violet-700">WHO-5 · Validated (Not Diagnostic)</span>
-          </div>
-        </div>
       </div>
 
       {/* Main Content 2-Column Grid */}

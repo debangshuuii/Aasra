@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ViewId, Who5Record, Who5TrendPoint, DailyCheckIn, WeeklyTrendDay } from '../types';
 import {
   WHO5_QUESTIONS,
@@ -34,6 +34,7 @@ interface WellbeingViewProps {
   onOpenCheckIn: () => void;
   onOpenPreviousCheckIns: () => void;
   onOpenCrisis?: () => void;
+  initialSection?: WellbeingSection;
 }
 
 type WellbeingSection = 'overview' | 'assessment' | 'who5-trend' | 'mood-trend';
@@ -48,17 +49,24 @@ export const WellbeingView: React.FC<WellbeingViewProps> = ({
   onOpenCheckIn,
   onOpenPreviousCheckIns,
   onOpenCrisis,
+  initialSection = 'overview',
 }) => {
-  const [section, setSection] = useState<WellbeingSection>('overview');
+  const [section, setSection] = useState<WellbeingSection>(initialSection);
   const [answers, setAnswers] = useState<(number | null)[]>([...NULL_ANSWERS]);
   const [submitted, setSubmitted] = useState(false);
   const [lastResult, setLastResult] = useState<{ raw: number; percent: number } | null>(null);
+
+  useEffect(() => {
+    if (initialSection) {
+      setSection(initialSection);
+    }
+  }, [initialSection]);
 
   const who5Ref = useRef<HTMLDivElement>(null);
   const moodRef = useRef<HTMLDivElement>(null);
 
   const todayKey = formatDateKey(new Date());
-  const weeklyDays: WeeklyTrendDay[] = getCurrentWeekDays(checkIns, new Date());
+  const weeklyDays: WeeklyTrendDay[] = getCurrentWeekDays(who5Records, new Date());
 
   // Build WHO-5 trend points (chronological order)
   const who5TrendPoints: Who5TrendPoint[] = [...who5Records]

@@ -65,6 +65,7 @@ export default function App() {
 
   // WHO-5 Well-Being Assessment Records (persisted locally)
   const [who5Records, setWho5Records] = useState<Who5Record[]>(() => loadStoredWho5());
+  const [wellbeingSection, setWellbeingSection] = useState<'overview' | 'assessment'>('overview');
 
   const { user } = useAuth();
 
@@ -174,20 +175,23 @@ export default function App() {
   const handleSaveWho5 = (newRecord: Who5Record) => {
     const userId = user?.id;
     setWho5Records(prev => {
-      const updated = [newRecord, ...prev];
+      const existingIdx = prev.findIndex(r => r.dateKey === newRecord.dateKey);
+      const updated = existingIdx >= 0
+        ? prev.map((r, i) => (i === existingIdx ? newRecord : r))
+        : [newRecord, ...prev];
       saveStoredWho5(updated, userId);
       return updated;
     });
 
     // Optional Supabase sync (table must exist — see supabase_schema.sql)
     if (userId) {
-      supabase.from('who5_assessments').insert({
+      supabase.from('who5_assessments').upsert({
         user_id: userId,
         raw_score: newRecord.rawScore,
         percent_score: newRecord.percentScore,
         answers: newRecord.answers,
         assessment_date: newRecord.dateKey,
-      }).then(({ error }) => {
+      }, { onConflict: 'user_id,assessment_date' }).then(({ error }) => {
         if (error) console.warn('[App] Supabase WHO-5 sync error (table may not exist yet):', error.message);
       });
     }
@@ -455,13 +459,14 @@ export default function App() {
           {currentView === 'dashboard' && (
             <DashboardView 
               onNavigate={handleNavigate}
-              checkIns={checkIns}
-              onOpenCheckIn={() => setIsCheckInModalOpen(true)}
-              onOpenPreviousCheckIns={() => setIsPreviousCheckInsModalOpen(true)}
               onOpenGrounding={() => setIsGroundingModalOpen(true)}
               onOpenCrisis={() => setIsCrisisModalOpen(true)}
               historyList={historyList}
               who5Records={who5Records}
+              onStartAssessment={() => {
+                setWellbeingSection('assessment');
+                handleNavigate('wellbeing');
+              }}
             />
           )}
 
@@ -488,7 +493,11 @@ export default function App() {
 
           {currentView === 'wellbeing' && (
             <WellbeingView
-              onNavigate={handleNavigate}
+              initialSection={wellbeingSection}
+              onNavigate={(view) => {
+                setWellbeingSection('overview');
+                handleNavigate(view);
+              }}
               who5Records={who5Records}
               onSaveWho5={handleSaveWho5}
               checkIns={checkIns}
